@@ -13,8 +13,8 @@ export default function Landing() {
     <div className="min-h-screen bg-[#2B1042] font-inter text-[#E8E0F0] overflow-x-hidden selection:bg-[#5C2D8F]/30 selection:text-[#D5CBE5] relative">
       <Navbar />
       <Hero />
-      <IntegrationsCarousel />
       <Features />
+      <IntegrationsCarousel />
       <HowItWorks />
       <UseCases />
       <Footer />

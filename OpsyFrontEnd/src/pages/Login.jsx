@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import OpsyLogo from '../components/OpsyLogo'
+import ChangeHubLogo from '../components/ChangeHubLogo'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Lock, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react'
+import { Mail, Lock, AlertCircle, ArrowRight, ShieldCheck, ArrowLeft } from 'lucide-react'
 
 export default function Login() {
   const { login } = useAuth()
@@ -48,7 +48,7 @@ export default function Login() {
         {/* ── LEFT SIDE: VISUAL ── */}
         <div className="hidden lg:flex flex-col justify-between p-16 bg-gradient-to-br from-primary/10 via-transparent to-transparent border-r border-white/5">
           <div className="space-y-6">
-            <OpsyLogo size={64} />
+            <ChangeHubLogo size={64} />
             <div className="space-y-4">
               <p className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">SYSTEM_COMMAND_SECURED</p>
               <h1 className="text-5xl font-light tracking-tighter text-white leading-[1.1]">
@@ -68,10 +68,19 @@ export default function Login() {
         </div>
 
         {/* ── RIGHT SIDE: FORM ── */}
-        <div className="p-10 lg:p-16 flex flex-col justify-center">
+        <div className="p-10 lg:p-16 flex flex-col justify-center relative">
+          {/* ── RETURN BUTTON ── */}
+          <button 
+            type="button"
+            onClick={() => navigate('/')}
+            className="absolute top-6 right-6 lg:top-8 lg:right-8 flex items-center gap-2 z-50 px-4 py-2 rounded-full bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/60 hover:text-primary transition-all group"
+          >
+            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+            Retour
+          </button>
           <div className="lg:hidden mb-10 text-center">
-             <OpsyLogo size={48} className="mx-auto mb-6" />
-             <h2 className="text-2xl font-light text-white tracking-tight">Opsy <span className="font-medium">Command</span></h2>
+             <ChangeHubLogo size={48} className="mx-auto mb-6" />
+             <h2 className="text-2xl font-light text-white tracking-tight">ChangeHub <span className="font-medium">Command</span></h2>
           </div>
 
           <form className="space-y-8" onSubmit={handleSubmit}>
@@ -87,7 +96,7 @@ export default function Login() {
                     value={form.email}
                     onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                     className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-14 pr-6 py-4 text-sm text-white placeholder:text-[#816A9E]/30 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:bg-white/[0.06] transition-all"
-                    placeholder="ingenieur@opsy.io"
+                    placeholder="ingenieur@ChangeHub.io"
                   />
                 </div>
               </div>

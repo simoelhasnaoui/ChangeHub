@@ -6,8 +6,9 @@ import {
     ArrowLeft, FileText, Activity, ShieldAlert, 
     History, CheckCircle2, AlertCircle, XCircle,
     Edit3, Trash2, Send, Server, Calendar, 
-    User, ChevronRight, MessageSquare, Info
+    User, ChevronRight, MessageSquare, Info, Layers
 } from 'lucide-react'
+import ConfirmModal from '../../components/ConfirmModal'
 
 const STATUS_MAP = {
     draft: { label: 'Brouillon', color: '#B5A1C2', bg: 'bg-[#B5A1C2]/10' },
@@ -15,13 +16,28 @@ const STATUS_MAP = {
     approved: { label: 'Approuvé', color: '#3b82f6', bg: 'bg-blue-500/10' },
     in_progress: { label: 'En cours', color: '#6366f1', bg: 'bg-indigo-500/10' },
     done: { label: 'Terminé', color: '#10b981', bg: 'bg-emerald-500/10' },
-    rejected: { label: 'Rejeté', color: '#f43f5e', bg: 'bg-rose-500/10' },
+    rejected: { label: 'Rejeté', color: '#f43f5e', bg: 'bg-rose-500/10', glow: 'shadow-[0_0_30px_rgba(244,63,94,0.2)]' },
+}
+
+const MODULE_GLOWS = {
+    draft: 'from-[#B5A1C2]/10 to-transparent',
+    pending_approval: 'from-amber-500/10 to-transparent',
+    approved: 'from-blue-500/10 to-transparent',
+    in_progress: 'from-indigo-500/10 to-transparent',
+    done: 'from-emerald-500/10 to-transparent',
+    rejected: 'from-rose-500/10 to-transparent',
 }
 
 const reqValidationConfig = {
     pending: { label: 'Validation en attente', color: 'text-amber-400' },
     validated: { label: 'Validé avec succès', color: 'text-green-400' },
     rejected: { label: 'Rejeté / À refaire', color: 'text-red-400' },
+}
+
+const RISK_MAP = {
+    low: { label: 'Faible', color: '#10b981' },
+    medium: { label: 'Moyen', color: '#f59e0b' },
+    high: { label: 'Élevé', color: '#f43f5e' },
 }
 
 export default function ChangeDetail() {
@@ -36,6 +52,10 @@ export default function ChangeDetail() {
     const [validationStatus, setValidationStatus] = useState('')
     const [validationComment, setValidationComment] = useState('')
     const [validating, setValidating] = useState(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [showAppealForm, setShowAppealForm] = useState(false)
+    const [appealComment, setAppealComment] = useState('')
+    const [appealing, setAppealing] = useState(false)
 
     const load = async () => {
         setError(null)
@@ -63,7 +83,11 @@ export default function ChangeDetail() {
     }
 
     const handleDelete = async () => {
-        if (!window.confirm('Supprimer ce dossier définitivement ?')) return
+        setShowDeleteConfirm(true)
+    }
+
+    const executeDelete = async () => {
+        setShowDeleteConfirm(false)
         setSubmitting(true)
         try {
             await api.delete(`/change-requests/${id}`)
@@ -90,6 +114,24 @@ export default function ChangeDetail() {
         }
     }
 
+    const handleAppeal = async (e) => {
+        e.preventDefault()
+        if (!appealComment.trim()) return
+        setAppealing(true)
+        try {
+            await api.post(`/change-requests/${id}/appeal`, {
+                comment: appealComment
+            })
+            setAppealComment('')
+            setShowAppealForm(false)
+            await load()
+        } catch (err) {
+            alert(err.response?.data?.message || 'Erreur lors de l\'appel.')
+        } finally {
+            setAppealing(false)
+        }
+    }
+
     if (loading) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6">
@@ -112,68 +154,133 @@ export default function ChangeDetail() {
     const statusObj = STATUS_MAP[cr.status]
 
     return (
-        <div className="max-w-[1400px] mx-auto space-y-12 pb-20 font-inter">
-            {/* ── HEADER ── */}
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-white/5">
-                <div className="space-y-4">
+        <>
+            <div className="max-w-[1400px] mx-auto space-y-12 pb-20 font-inter">
+            {/* ── ATMOSPHERIC BACKGROUND ── */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className={`absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-20 bg-gradient-to-br ${MODULE_GLOWS[cr.status]}`} />
+                <div className={`absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] rounded-full blur-[100px] opacity-10 bg-gradient-to-tl ${MODULE_GLOWS[cr.status]}`} />
+            </div>
+
+            {/* ── CINEMATIC HEADER ── */}
+            <div className="relative z-10 space-y-10 pb-12 border-b border-white/5">
+                <div className="flex items-center justify-between">
                     <Link 
                         to="/requester/changes" 
-                        className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 hover:text-primary transition-colors"
+                        className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-[#B5A1C2]/40 hover:text-primary transition-all"
                     >
-                        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-                        Flux des interventions
+                        <div className="p-2 rounded-lg bg-white/5 group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                        </div>
+                        Back_to_Flow
                     </Link>
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-4xl font-light tracking-tight text-white leading-none capitalize">{cr.title}</h1>
-                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-white/5 whitespace-nowrap shadow-2xl ${statusObj?.bg}`} style={{ color: statusObj?.color }}>
-                            {statusObj?.label}
-                        </span>
+                    <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20">
+                        <span className="text-primary/40">NODE_SESSION</span>
+                        <span className="w-1 h-1 rounded-full bg-white/10" />
+                        <span>REQ-{cr.id}</span>
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#B5A1C2]/20">Dossier technique #REQ-{cr.id}</p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    {cr.status === 'draft' && (
-                        <>
-                            <button
-                                onClick={handleDelete}
-                                disabled={submitting}
-                                className="p-4 rounded-2xl bg-white/5 border border-white/5 text-rose-400 hover:bg-rose-500/10 transition-all"
-                                title="Supprimer"
-                            >
-                                <Trash2 size={18} />
-                            </button>
-                            <Link
-                                to={`/requester/changes/${id}/edit`}
-                                className="p-4 rounded-2xl bg-white/5 border border-white/5 text-primary hover:bg-primary/10 transition-all"
-                                title="Modifier"
-                            >
-                                <Edit3 size={18} />
-                            </Link>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={submitting}
-                                className="group flex items-center gap-3 bg-primary text-[#0F051E] font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-2xl"
-                            >
-                                <Send size={16} />
-                                {submitting ? 'Envoi...' : 'Soumettre'}
-                            </button>
-                        </>
-                    )}
+                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
+                    <div className="space-y-6 max-w-3xl">
+                        <div className="flex items-center gap-4">
+                            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-white/10 ${statusObj?.bg} ${statusObj?.glow || ''}`} style={{ color: statusObj?.color }}>
+                                {statusObj?.label}
+                            </div>
+                            <span className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40">Intelligence_Dossier</span>
+                        </div>
+                        <h1 className="text-6xl font-light tracking-tighter text-white leading-[0.9] lg:text-7xl">
+                            {cr.title}
+                        </h1>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0">
+                        <AnimatePresence>
+                            {cr.status === 'draft' && (
+                                <motion.div 
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="flex items-center gap-4"
+                                >
+                                    <button
+                                        onClick={handleDelete}
+                                        disabled={submitting}
+                                        className="p-5 rounded-3xl bg-white/5 border border-white/5 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all group overflow-hidden relative"
+                                        title="Supprimer"
+                                    >
+                                        <div className="absolute inset-0 bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <Trash2 size={20} className="relative z-10" />
+                                    </button>
+                                    <Link
+                                        to={`/requester/changes/${id}/edit`}
+                                        className="p-5 rounded-3xl bg-white/5 border border-white/5 text-primary hover:bg-primary/10 hover:border-primary/20 transition-all group overflow-hidden relative"
+                                        title="Modifier"
+                                    >
+                                        <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <Edit3 size={20} className="relative z-10" />
+                                    </Link>
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={submitting}
+                                        className="group relative flex items-center gap-4 bg-primary text-[#0F051E] font-black uppercase tracking-[0.2em] text-[11px] px-10 py-5 rounded-[2rem] hover:scale-105 active:scale-95 transition-all shadow-[0_20px_40px_rgba(209,140,255,0.2)] overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity" />
+                                        <Send size={18} className="relative z-10" />
+                                        <span className="relative z-10">{submitting ? 'Transmitting...' : 'Commit_to_CAB'}</span>
+                                    </button>
+                                </motion.div>
+                            )}
+                            {cr.status === 'rejected' && (
+                                <motion.div 
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="flex items-center gap-4"
+                                >
+                                    <button
+                                        onClick={() => setShowAppealForm(!showAppealForm)}
+                                        className="group relative flex items-center gap-4 bg-rose-500 text-white font-black uppercase tracking-[0.2em] text-[11px] px-10 py-5 rounded-[2rem] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-rose-500/20 overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity" />
+                                        <ShieldAlert size={18} className="relative z-10" />
+                                        <span className="relative z-10">{showAppealForm ? 'Fermer_Console' : 'Interjeter_Appel'}</span>
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 {/* ── LEFT COLUMN: CONTENT ── */}
                 <div className="lg:col-span-8 space-y-10">
-                    {/* Description Module */}
-                    <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-10 xl:p-14 rounded-[3.5rem] shadow-2xl space-y-8 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
-                        <h3 className="text-xs font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40 flex items-center gap-3">
-                            <FileText size={16} className="text-primary" /> Spécifications Techniques
-                        </h3>
-                        <div className="prose prose-invert max-w-none">
-                            <p className="text-base text-[#D5CBE5]/90 leading-[1.8] whitespace-pre-wrap">{cr.description}</p>
+                    {/* Technical Console Module */}
+                    <div className="group relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-[3.5rem]" />
+                        <div className="relative bg-[#0F051E]/80 backdrop-blur-3xl border border-white/5 p-10 xl:p-14 rounded-[3.5rem] shadow-2xl space-y-10">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-xs font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40 flex items-center gap-3">
+                                    <Layers size={16} className="text-primary" /> Spécifications_Techniques
+                                </h3>
+                                <div className="flex gap-1.5">
+                                    <div className="w-2 h-2 rounded-full bg-rose-500/20" />
+                                    <div className="w-2 h-2 rounded-full bg-amber-500/20" />
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500/20" />
+                                </div>
+                            </div>
+                            
+                            <div className="relative group/console">
+                                <div className="absolute -left-6 top-0 bottom-0 w-px bg-white/5" />
+                                <pre className="font-mono text-sm text-[#D5CBE5]/90 leading-relaxed whitespace-pre-wrap pl-2 h-full">
+                                    <div className="absolute -left-12 top-0 text-[10px] font-mono text-white/5 select-none leading-relaxed">
+                                        {cr.description.split('\n').map((_, i) => (
+                                            <div key={i}>{String(i + 1).padStart(2, '0')}</div>
+                                        ))}
+                                    </div>
+                                    {cr.description}
+                                </pre>
+                            </div>
                         </div>
                     </div>
 
@@ -291,42 +398,54 @@ export default function ChangeDetail() {
                             )}
                         </div>
                     )}
-                </div>
 
-                {/* ── RIGHT COLUMN: INFO & HISTORY ── */}
-                <div className="lg:col-span-4 space-y-10">
-                    {/* Identification Module */}
-                    <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-8 xl:p-10 rounded-[3rem] shadow-2xl space-y-8">
-                        <div className="space-y-6">
-                            {[
-                                { label: 'Type', value: cr.change_type?.name, icon: <Layers size={14} /> },
-                                { label: 'Système', value: cr.affected_system, icon: <Server size={14} /> },
-                                { label: 'Échéance', value: new Date(cr.planned_date).toLocaleDateString('fr-FR'), icon: <Calendar size={14} /> },
-                                { label: 'Demandeur', value: cr.requester?.name, icon: <User size={14} /> },
-                                { label: 'Exécuteur', value: cr.implementer?.name || 'Non assigné', icon: <Activity size={14} /> },
-                            ].map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-4 group">
-                                    <div className="p-3 bg-white/5 rounded-xl text-primary transition-transform group-hover:scale-110">{item.icon}</div>
-                                    <div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20 mb-0.5">{item.label}</p>
-                                        <p className="text-sm font-bold text-[#E8E0F0]">{item.value}</p>
-                                    </div>
+                    {/* Appeal Console Module */}
+                    <AnimatePresence>
+                        {cr.status === 'rejected' && showAppealForm && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="bg-rose-500/5 backdrop-blur-3xl border border-rose-500/20 p-10 xl:p-14 rounded-[3.5rem] shadow-2xl space-y-10"
+                            >
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-xs font-black uppercase tracking-[0.4em] text-rose-400 flex items-center gap-3">
+                                        <ShieldAlert size={16} /> Console_Intervention_Appel
+                                    </h3>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-500/40 bg-rose-500/5 px-3 py-1 rounded-full border border-rose-500/10">PROTOCOL_A2</span>
                                 </div>
-                            ))}
-                        </div>
 
-                        <div className="pt-8 border-t border-white/5">
-                            <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 flex items-center gap-2">
-                                    <ShieldAlert size={14} /> Niveau de Risque
-                                </span>
-                                <span className="text-xs font-bold uppercase tracking-tighter" style={{ color: RISK_MAP[cr.risk_level]?.color }}>
-                                    {RISK_MAP[cr.risk_level]?.label}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                                <div className="space-y-8">
+                                    <p className="text-xs text-rose-100/60 leading-relaxed italic">
+                                        L'appel permet de soumettre de nouveau le dossier aux approbeurs avec une justification complémentaire. Expliquez pourquoi cette décision devrait être reconsidérée.
+                                    </p>
 
+                                    <form onSubmit={handleAppeal} className="space-y-6">
+                                        <div className="space-y-3">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-rose-500/40 ml-1">Arguments_Justificatifs</label>
+                                            <textarea
+                                                required
+                                                placeholder="Saisissez vos arguments techniques ou organisationnels..."
+                                                value={appealComment}
+                                                onChange={(e) => setAppealComment(e.target.value)}
+                                                rows="4"
+                                                className="w-full bg-rose-500/5 border border-rose-500/20 rounded-[2rem] px-8 py-6 text-sm text-white focus:outline-none focus:ring-2 focus:ring-rose-500/30 transition-all resize-none placeholder:text-rose-500/20"
+                                            />
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            disabled={appealing || !appealComment.trim()}
+                                            className="w-full relative flex items-center justify-center gap-4 bg-rose-500 text-white font-black uppercase tracking-[0.3em] text-[11px] py-6 rounded-[2rem] hover:bg-rose-400 transition-all shadow-xl shadow-rose-500/20 disabled:opacity-50 group"
+                                        >
+                                            <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                            <span>{appealing ? 'TRANSMISSION_EN_COURS...' : 'TRANSMETTRE_L_APPEL'}</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                     {/* Timeline Module */}
                     <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[3.5rem] shadow-2xl space-y-8">
                         <h3 className="text-xs font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40 flex items-center gap-3">
@@ -361,22 +480,73 @@ export default function ChangeDetail() {
                             )}
                         </div>
                     </div>
+                </div>
 
-                    {/* Support / Help Card */}
-                    <div className="bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 p-10 rounded-[3.5rem] space-y-6">
-                        <div className="flex items-center gap-4 text-primary">
-                            <MessageSquare size={20} />
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em]">Besoin d'aide ?</h4>
+                {/* ── RIGHT COLUMN: INFO & HISTORY ── */}
+                <div className="lg:col-span-4 space-y-10">
+                    {/* Modular Identification Group */}
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            {[
+                                { label: 'Type', value: cr.change_type?.name, icon: <Layers size={16} /> },
+                                { label: 'Cible', value: cr.affected_system, icon: <Server size={16} /> },
+                            ].map((item, idx) => (
+                                <div key={idx} className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-6 rounded-3xl group hover:border-primary/20 transition-all">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+                                        {item.icon}
+                                    </div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20 mb-1">{item.label}</p>
+                                    <p className="text-sm font-bold text-white truncate">{item.value}</p>
+                                </div>
+                            ))}
                         </div>
-                        <p className="text-xs text-[#B5A1C2]/60 leading-relaxed">
-                            Pour toute question technique concernant cette intervention, contactez votre administrateur système.
-                        </p>
-                        <button className="w-full py-4 text-[9px] font-black uppercase tracking-widest text-primary border border-primary/20 rounded-2xl hover:bg-primary/10 transition-all">
-                            Ouvrir un ticket
-                        </button>
+
+                        <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-8 rounded-[2.5rem] space-y-8">
+                            {[
+                                { label: 'Planning', value: new Date(cr.planned_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }), icon: <Calendar size={14} />, sub: 'Date d\'exécution prévue' },
+                                { label: 'Responsable', value: cr.requester?.name, icon: <User size={14} />, sub: 'Auteur du dossier (Requester)' },
+                                { label: 'Équipe OPS', value: cr.implementers?.length > 0 ? `${cr.implementers.length} Spécialistes` : 'Non assigné', icon: <Activity size={14} />, sub: cr.implementers?.map(i => i.name).join(', ') || 'En attente de déploiement' },
+                            ].map((item, idx) => (
+                                <div key={idx} className="flex items-start gap-4 group">
+                                    <div className="mt-1 p-2.5 bg-white/5 rounded-xl text-primary/60 group-hover:text-primary transition-colors">{item.icon}</div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-white/80">{item.value}</p>
+                                        <p className="text-[9px] text-[#B5A1C2]/30 mt-0.5">{item.sub}</p>
+                                    </div>
+                                </div>
+                            ))}
+
+                            <div className="pt-8 border-t border-white/5">
+                                <div className="flex items-center justify-between p-5 rounded-2xl bg-white/[0.02] border border-white/5 group hover:border-white/10 transition-all cursor-help">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-rose-500/10 rounded-lg text-rose-400 opacity-60">
+                                            <ShieldAlert size={14} />
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40">Risk_Matrix</span>
+                                    </div>
+                                    <span className="text-xs font-black uppercase tracking-tighter" style={{ color: RISK_MAP[cr.risk_level]?.color }}>
+                                        LVL_{cr.risk_level.toUpperCase()}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+
                 </div>
             </div>
         </div>
+
+        <ConfirmModal
+            isOpen={showDeleteConfirm}
+            onConfirm={executeDelete}
+            onCancel={() => setShowDeleteConfirm(false)}
+            title="Supprimer le dossier"
+            message="Ce dossier et toutes les données associées seront définitivement supprimés. Cette action est irréversible."
+            confirmText="Supprimer"
+            cancelText="Annuler"
+            danger={true}
+        />
+        </>
     )
 }

@@ -7,9 +7,19 @@ import {
     History, CheckCircle2, AlertCircle, XCircle,
     Server, Layers, Calendar, User, 
     ChevronRight, Download, Search, Info,
-    Eye, MoreHorizontal, Terminal
+    Eye, MoreHorizontal, Terminal, Globe, Cpu, Globe2,
+    Database
 } from 'lucide-react'
 import { generateReport } from '../../utils/generateReport'
+
+const GLOWS = {
+    draft: 'from-[#B5A1C2]/10 via-transparent to-transparent',
+    pending_approval: 'from-amber-500/10 via-transparent to-transparent',
+    approved: 'from-blue-500/10 via-transparent to-transparent',
+    in_progress: 'from-indigo-500/10 via-transparent to-transparent',
+    done: 'from-emerald-500/10 via-transparent to-transparent',
+    rejected: 'from-rose-500/10 via-transparent to-transparent',
+}
 
 const STATUS_MAP = {
     draft: { label: 'Brouillon', color: '#B5A1C2', bg: 'bg-[#B5A1C2]/10' },
@@ -70,67 +80,90 @@ export default function AdminChangeDetail() {
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-12 pb-20 font-inter">
-            {/* ── HEADER ── */}
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-white/5">
-                <div className="space-y-4">
+            {/* ── ATMOSPHERIC BACKGROUND ── */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className={`absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] opacity-20 bg-gradient-to-br ${GLOWS[cr.status] || 'from-primary/10 to-transparent'}`} />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] rounded-full blur-[100px] opacity-5 bg-primary/10" />
+            </div>
+
+            {/* ── CINEMATIC HEADER ── */}
+            <div className="relative z-10 space-y-10 pb-12 border-b border-white/5">
+                <div className="flex items-center justify-between">
                     <Link 
                         to="/admin" 
-                        className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 hover:text-primary transition-colors"
+                        className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-[#B5A1C2]/40 hover:text-primary transition-all"
                     >
-                        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-                        Registre Global
+                        <div className="p-2 rounded-lg bg-white/5 group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                        </div>
+                        Audit_Registry
                     </Link>
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-4xl font-light tracking-tight text-white leading-none">Console d'<span className="font-medium text-primary">Audit</span></h1>
-                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-white/5 whitespace-nowrap shadow-2xl ${statusObj?.bg}`} style={{ color: statusObj?.color }}>
-                            {statusObj?.label}
-                        </span>
+                    <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20">
+                        <span className="text-primary/40">ADMIN_AUDIT_CONSOLE</span>
+                        <span className="w-1 h-1 rounded-full bg-white/10" />
+                        <span>NODE: REQ-{cr.id}</span>
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#B5A1C2]/20">AUDIT_NODE: REQ-{cr.id}</p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    {cr.analysis && (
-                        <button
-                            onClick={() => generateReport(cr, cr.analysis)}
-                            className="group flex items-center gap-3 bg-white/5 text-white font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-2xl hover:bg-white/10 border border-white/5 transition-all shadow-2xl"
-                        >
-                            <Download size={16} className="text-primary" />
-                            Exporter PV Audit
-                        </button>
-                    )}
+                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
+                    <div className="space-y-6 max-w-3xl">
+                        <div className="flex items-center gap-4">
+                            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-white/10 ${statusObj?.bg}`} style={{ color: statusObj?.color }}>
+                                {statusObj?.label?.toUpperCase()}
+                            </div>
+                            <span className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40">System_Integrity_Audit</span>
+                        </div>
+                        <h1 className="text-6xl font-light tracking-tighter text-white leading-[0.9] lg:text-7xl">
+                            {cr.title}
+                        </h1>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0">
+                        {cr.analysis && (
+                            <button
+                                onClick={() => generateReport(cr, cr.analysis)}
+                                className="group relative flex items-center gap-4 bg-white/5 text-white font-black uppercase tracking-[0.2em] text-[11px] px-10 py-5 rounded-[2rem] hover:bg-white/10 border border-white/10 transition-all shadow-2xl overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Download size={18} className="text-primary relative z-10" />
+                                <span className="relative z-10">Export_Audit_PV</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 {/* ── LEFT: SPECS ── */}
                 <div className="lg:col-span-8 space-y-10">
-                    <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-10 xl:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+                    <div className="bg-[#0F051E]/60 backdrop-blur-3xl border border-white/5 p-10 xl:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-primary/10 transition-colors" />
                         
-                        <div className="space-y-8">
-                            <div>
-                                <h3 className="text-xs font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40 flex items-center gap-3 mb-6">
-                                    <Terminal size={16} className="text-primary" /> Dossier Source
+                        <div className="space-y-12">
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40 flex items-center gap-3">
+                                    <Terminal size={16} className="text-primary" /> Source_Brief
                                 </h3>
-                                <h2 className="text-2xl font-bold text-white mb-6 leading-tight">{cr.title}</h2>
-                                <p className="text-sm text-[#D5CBE5]/80 leading-relaxed whitespace-pre-wrap">{cr.description}</p>
+                                <div className="relative pl-6">
+                                    <div className="absolute left-0 top-0 bottom-0 w-px bg-primary/20" />
+                                    <p className="text-sm font-mono text-[#D5CBE5]/90 leading-relaxed whitespace-pre-wrap">{cr.description}</p>
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-8 p-8 bg-white/[0.02] rounded-3xl border border-white/5">
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                                 {[
                                     { label: 'Type', value: cr.change_type?.name, icon: <Layers size={14} /> },
-                                    { label: 'Système', value: cr.affected_system, icon: <Server size={14} /> },
-                                    { label: 'Échéance', value: new Date(cr.planned_date).toLocaleDateString('fr-FR'), icon: <Calendar size={14} /> },
-                                    { label: 'Risque', value: RISK_MAP[cr.risk_level]?.label, icon: <ShieldAlert size={14} />, color: RISK_MAP[cr.risk_level]?.color },
-                                    { label: 'Demandeur', value: cr.requester?.name, icon: <User size={14} /> },
-                                    { label: 'Exécuteurs', value: cr.implementers?.length > 0 ? cr.implementers.map(i => i.name).join(', ') : 'Aucun', icon: <Activity size={14} /> },
+                                    { label: 'System', value: cr.affected_system, icon: <Server size={14} /> },
+                                    { label: 'Schedule', value: new Date(cr.planned_date).toLocaleDateString('fr-FR'), icon: <Calendar size={14} /> },
+                                    { label: 'Risk', value: RISK_MAP[cr.risk_level]?.label, icon: <ShieldAlert size={14} />, color: RISK_MAP[cr.risk_level]?.color },
+                                    { label: 'Author', value: cr.requester?.name, icon: <User size={14} /> },
+                                    { label: 'Ops_Team', value: cr.implementers?.length > 0 ? `${cr.implementers.length} Assigned` : 'None', icon: <Activity size={14} /> },
                                 ].map((item, idx) => (
-                                    <div key={idx} className="space-y-1">
-                                        <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-[#B5A1C2]/20">
-                                            {item.icon} {item.label}
-                                        </div>
-                                        <p className="text-[11px] font-bold text-[#E8E0F0] truncate" style={item.color ? { color: item.color } : {}}>{item.value || '—'}</p>
+                                    <div key={idx} className="p-5 bg-white/[0.02] rounded-3xl border border-white/5 group/card hover:bg-white/[0.05] transition-all">
+                                        <div className="text-primary/40 group-hover/card:text-primary transition-colors mb-3">{item.icon}</div>
+                                        <p className="text-[8px] font-black uppercase tracking-widest text-[#B5A1C2]/20 mb-1">{item.label}</p>
+                                        <p className="text-[10px] font-bold text-white truncate" style={item.color ? { color: item.color } : {}}>{item.value || '—'}</p>
                                     </div>
                                 ))}
                             </div>
@@ -181,20 +214,6 @@ export default function AdminChangeDetail() {
                             )}
                         </div>
                     )}
-                </div>
-
-                {/* ── RIGHT: HISTORY ── */}
-                <div className="lg:col-span-4 space-y-10">
-                    {/* Security Card */}
-                    {cr.approval_conditions && (
-                        <div className="bg-amber-500/5 border border-amber-500/20 p-8 rounded-[3rem] space-y-4">
-                            <div className="flex items-center gap-3 text-amber-500">
-                                <ShieldAlert size={18} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Protocoles d'Approbation</span>
-                            </div>
-                            <p className="text-xs text-amber-500/80 leading-relaxed italic">"{cr.approval_conditions}"</p>
-                        </div>
-                    )}
 
                     {/* Full History Timeline */}
                     <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[3.5rem] shadow-2xl space-y-8">
@@ -226,6 +245,22 @@ export default function AdminChangeDetail() {
                             ))}
                         </div>
                     </div>
+                </div>
+
+                {/* ── RIGHT: HISTORY ── */}
+                <div className="lg:col-span-4 space-y-10">
+                    {/* Security Card */}
+                    {cr.approval_conditions && (
+                        <div className="bg-amber-500/5 border border-amber-500/20 p-8 rounded-[3rem] space-y-4">
+                            <div className="flex items-center gap-3 text-amber-500">
+                                <ShieldAlert size={18} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Protocoles d'Approbation</span>
+                            </div>
+                            <p className="text-xs text-amber-500/80 leading-relaxed italic">"{cr.approval_conditions}"</p>
+                        </div>
+                    )}
+
+
 
                     {/* Meta Card */}
                     <div className="bg-white/5 border border-white/10 p-10 rounded-[3.5rem] space-y-6">

@@ -149,9 +149,12 @@ export function generateReport(cr, analysis) {
 
 <!-- Header -->
 <div class="header">
-    <div>
-        <div class="header-brand">⚙ Opsy</div>
-        <div class="header-subtitle">Rapport de demande de changement</div>
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <img src="${window.location.origin}/logo.png" style="height: 45px; width: auto;" alt="Logo" />
+        <div>
+            <div class="header-brand">ChangeHub</div>
+            <div class="header-subtitle">Rapport de demande de changement</div>
+        </div>
     </div>
     <div class="header-meta">
         <strong>${cr.title}</strong>
@@ -196,6 +199,39 @@ ${analysis ? `
 </div>
 ` : ''}
 
+${cr.incidents && cr.incidents.length > 0 ? `
+<!-- Incidents Registry -->
+<div class="section">
+    <div class="section-title">Registre des Incidents Déclarés</div>
+    <table style="font-size: 11px;">
+        <thead>
+            <tr style="background: #fff1f2;">
+                <th style="color: #991b1b; width: 25%;">Incident / Sévérité</th>
+                <th style="color: #991b1b; width: 50%;">Détails & Impact</th>
+                <th style="color: #991b1b; width: 25%;">Temps de résolution</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${cr.incidents.map(inc => `
+            <tr>
+                <td style="vertical-align: top;">
+                    <strong style="display: block; color: #111827;">${inc.title}</strong>
+                    <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: ${inc.severity === 'high' ? '#dc2626' : (inc.severity === 'medium' ? '#d97706' : '#16a34a')}">
+                        ${inc.severity}
+                    </span>
+                </td>
+                <td style="vertical-align: top; color: #4b5563;">
+                    ${inc.description || '—'}
+                </td>
+                <td style="vertical-align: top; font-weight: 600; color: #111827;">
+                    ${inc.time_to_resolve_minutes} min
+                </td>
+            </tr>`).join('')}
+        </tbody>
+    </table>
+</div>
+` : ''}
+
 ${cr.histories && cr.histories.length > 0 ? `
 <!-- History -->
 <div class="section">
@@ -226,7 +262,7 @@ ${cr.histories && cr.histories.length > 0 ? `
 
 <!-- Footer -->
 <div class="footer">
-    <span>Opsy — Gestion des changements techniques</span>
+    <span>ChangeHub — Gestion des changements techniques</span>
     <span>Rapport généré le ${now}</span>
 </div>
 

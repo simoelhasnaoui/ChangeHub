@@ -31,7 +31,7 @@ class ChangeRequestPolicy
     public function view(User $user, ChangeRequest $cr): bool
     {
         return $user->id === $cr->requester_id
-            || $user->id === $cr->implementer_id
+            || $cr->implementers->contains($user->id)
             || $user->isApprover();
     }
 
@@ -68,11 +68,19 @@ class ChangeRequestPolicy
     }
 
     /**
+     * Appeal: only the requester, and only while rejected.
+     */
+    public function appeal(User $user, ChangeRequest $cr): bool
+    {
+        return $user->id === $cr->requester_id && $cr->status === 'rejected';
+    }
+
+    /**
      * Update status: only the assigned implementer.
      */
     public function updateStatus(User $user, ChangeRequest $cr): bool
     {
-        return $user->id === $cr->implementer_id;
+        return $cr->implementers->contains($user->id);
     }
 
     /**
@@ -80,6 +88,6 @@ class ChangeRequestPolicy
      */
     public function addAnalysis(User $user, ChangeRequest $cr): bool
     {
-        return $user->id === $cr->implementer_id && $cr->status === 'done';
+        return $cr->implementers->contains($user->id) && $cr->status === 'done';
     }
 }

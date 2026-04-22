@@ -32,7 +32,7 @@ class TemporaryPasswordMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Réinitialisation de votre mot de passe Opsy',
+            subject: 'Réinitialisation de votre mot de passe ChangeHub',
         );
     }
 

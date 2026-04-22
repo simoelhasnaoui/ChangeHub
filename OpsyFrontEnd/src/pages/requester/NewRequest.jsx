@@ -7,6 +7,9 @@ import {
     Server, Calendar, ShieldAlert, Layers,
     CheckCircle2, AlertCircle
 } from 'lucide-react'
+import ChangeHubSelect from '../../components/ui/ChangeHubSelect'
+import ChangeHubDatePicker from '../../components/ui/ChangeHubDatePicker'
+
 
 export default function NewRequest() {
     const navigate = useNavigate()
@@ -136,15 +139,14 @@ export default function NewRequest() {
                                     <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1">
                                         <Layers size={14} className="text-primary/40" /> Catégorie
                                     </label>
-                                    <select
-                                        required 
+                                    <ChangeHubSelect 
+                                        options={types.map(t => ({ value: t.id, label: t.name }))}
                                         value={form.change_type_id}
-                                        onChange={e => set('change_type_id', e.target.value)}
-                                        className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all appearance-none cursor-pointer"
-                                    >
-                                        <option value="" className="bg-[#150522]">Sélectionner...</option>
-                                        {types.map(t => <option key={t.id} value={t.id} className="bg-[#150522]">{t.name}</option>)}
-                                    </select>
+                                        onChange={val => set('change_type_id', val)}
+                                        icon={Layers}
+                                        placeholder="Sélectionner une catégorie..."
+                                    />
+
                                 </div>
 
                                 <div className="space-y-2">
@@ -164,13 +166,12 @@ export default function NewRequest() {
                                     <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1">
                                         <Calendar size={14} className="text-primary/40" /> Date Prévue
                                     </label>
-                                    <input
-                                        type="date" 
-                                        required 
+                                    <ChangeHubDatePicker 
                                         value={form.planned_date}
-                                        onChange={e => set('planned_date', e.target.value)}
-                                        className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all [color-scheme:dark]"
+                                        onChange={val => set('planned_date', val)}
+                                        icon={Calendar}
                                     />
+
                                 </div>
 
                                 <div className="space-y-2">

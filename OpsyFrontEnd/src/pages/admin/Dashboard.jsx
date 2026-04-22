@@ -10,6 +10,8 @@ import { Link } from 'react-router-dom'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
 import { useSearch } from '../../context/SearchContext'
+import ConfirmModal from '../../components/ConfirmModal'
+import UserFormModal from '../../components/UserFormModal'
 import {
     ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
     Tooltip as RechartsTooltip, PieChart, Pie, Cell,
@@ -44,7 +46,7 @@ const StatCard = ({ title, value, icon, color, trend }) => (
         <div className={`absolute top-0 right-0 w-24 h-24 blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity`} style={{ backgroundColor: color }} />
         <div className="flex justify-between items-start mb-4 relative z-10">
             <div className="p-3 rounded-2xl bg-primary/5">
-                {React.cloneElement(icon, { size: 20, color: color || 'var(--opsy-primary)' })}
+                {React.cloneElement(icon, { size: 20, color: color || 'var(--ChangeHub-primary)' })}
             </div>
             {trend && <span className="text-[10px] font-black text-emerald-400">+{trend}%</span>}
         </div>
@@ -131,24 +133,27 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true)
     const [activeFilter, setActiveFilter] = useState(null)
     const [currentPage, setCurrentPage] = useState(1)
+    const [confirmDelete, setConfirmDelete] = useState(null)
+    const [showUserForm, setShowUserForm] = useState(false)
     const itemsPerPage = 8
 
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const [s, r, u] = await Promise.all([
-                    api.get('/admin/stats'),
-                    api.get('/change-requests'),
-                    api.get('/users')
-                ])
-                setStats(s.data)
-                setRequests(r.data)
-                setAllUsers(u.data)
-            } finally {
-                setLoading(false)
-            }
+    const loadData = async () => {
+        try {
+            const [s, r, u] = await Promise.all([
+                api.get('/admin/stats'),
+                api.get('/change-requests'),
+                api.get('/users')
+            ])
+            setStats(s.data)
+            setRequests(r.data)
+            setAllUsers(u.data)
+        } finally {
+            setLoading(false)
         }
-        load()
+    }
+
+    useEffect(() => {
+        loadData()
     }, [])
 
     useEffect(() => {
@@ -156,12 +161,17 @@ export default function AdminDashboard() {
     }, [activeFilter, searchQuery])
 
     const handleDeleteUser = async (id) => {
-        if (!window.confirm('Supprimer cet utilisateur ?')) return;
+        setConfirmDelete(id)
+    }
+
+    const executeDelete = async () => {
+        const id = confirmDelete
+        setConfirmDelete(null)
         try {
             await api.delete(`/users/${id}`)
             setAllUsers(allUsers.filter(u => u.id !== id))
         } catch (err) {
-            alert('Erreur lors de la suppression')
+            alert(err.response?.data?.message || 'Erreur lors de la suppression')
         }
     }
 
@@ -180,9 +190,9 @@ export default function AdminDashboard() {
         }
         if (searchQuery) {
             const q = searchQuery.toLowerCase()
-            res = res.filter(r => 
-                (r.title && r.title.toLowerCase().includes(q)) || 
-                (r.id && r.id.toString().toLowerCase().includes(q)) || 
+            res = res.filter(r =>
+                (r.title && r.title.toLowerCase().includes(q)) ||
+                (r.id && r.id.toString().toLowerCase().includes(q)) ||
                 (r.requester?.name && r.requester.name.toLowerCase().includes(q))
             )
         }
@@ -209,7 +219,7 @@ export default function AdminDashboard() {
             {/* ── HEADER ── */}
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-white/5 relative">
                 <div className="space-y-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.6em] text-primary">ADMIN_COMMAND_HUB_V4</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.6em] text-primary">ADMIN_COMMAND_HUB</p>
                     <h1 className="text-5xl font-light tracking-tight text-text-main capitalize leading-none">Ravi de vous revoir, <span className="font-medium">{user?.name.split(' ')[0]}</span></h1>
                 </div>
 
@@ -237,9 +247,9 @@ export default function AdminDashboard() {
             {/* ── ANALYTICS ROW ── */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                 {/* 1. Status Breakdown */}
-                <ChartModule 
-                    title="Répartition des Statuts" 
-                    icon={<Activity size={16}/>}
+                <ChartModule
+                    title="Répartition des Statuts"
+                    icon={<Activity size={16} />}
                     isFiltered={activeFilter?.type === 'status'}
                     onClear={() => setActiveFilter(null)}
                 >
@@ -259,7 +269,7 @@ export default function AdminDashboard() {
                                     <Cell key={`cell-${index}`} fill={STATUS_MAP[entry.name]?.color || COLORS[index % COLORS.length]} />
                                 ))}
                             </Pie>
-                            <RechartsTooltip 
+                            <RechartsTooltip
                                 contentStyle={{ backgroundColor: '#150522', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px' }}
                                 itemStyle={{ color: '#fff' }}
                             />
@@ -268,30 +278,30 @@ export default function AdminDashboard() {
                 </ChartModule>
 
                 {/* 2. Risk Distribution */}
-                <ChartModule 
-                    title="Analyse des Risques" 
-                    icon={<AlertTriangle size={16}/>}
+                <ChartModule
+                    title="Analyse des Risques"
+                    icon={<AlertTriangle size={16} />}
                     isFiltered={activeFilter?.type === 'risk'}
                     onClear={() => setActiveFilter(null)}
                 >
                     <ResponsiveContainer width="100%" height={220}>
                         <BarChart data={breakdowns.risk} onClick={(data) => data && setActiveFilter({ type: 'risk', value: data.activeLabel })}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <XAxis 
-                                dataKey="name" 
-                                axisLine={false} 
-                                tickLine={false} 
+                            <XAxis
+                                dataKey="name"
+                                axisLine={false}
+                                tickLine={false}
                                 tick={{ fill: '#B5A1C2', fontSize: 10 }}
                                 tickFormatter={(val) => RISK_MAP[val]?.label || val}
                             />
                             <YAxis hide />
-                            <RechartsTooltip 
+                            <RechartsTooltip
                                 cursor={{ fill: 'rgba(255,255,255,0.03)' }}
                                 contentStyle={{ backgroundColor: '#150522', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px' }}
                             />
-                            <Bar 
-                                dataKey="value" 
-                                radius={[8, 8, 0, 0]} 
+                            <Bar
+                                dataKey="value"
+                                radius={[8, 8, 0, 0]}
                                 barSize={40}
                                 className="cursor-pointer"
                             >
@@ -304,13 +314,13 @@ export default function AdminDashboard() {
                 </ChartModule>
 
                 {/* 3. Volume Historique */}
-                <ChartModule title="Volume Historique" icon={<TrendingUp size={16}/>}>
+                <ChartModule title="Volume Historique" icon={<TrendingUp size={16} />}>
                     <ResponsiveContainer width="100%" height={220}>
                         <AreaChart data={breakdowns.overTime}>
                             <defs>
                                 <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#D18CFF" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#D18CFF" stopOpacity={0}/>
+                                    <stop offset="5%" stopColor="#D18CFF" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="#D18CFF" stopOpacity={0} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -340,12 +350,12 @@ export default function AdminDashboard() {
                             <p className="text-[10px] text-text-dim mt-1">{filteredRequests.length} résultats correspondants</p>
                         </div>
                         {activeFilter && (
-                             <span className="bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-primary/20">
+                            <span className="bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-primary/20">
                                 {activeFilter.type}: {activeFilter.value}
-                             </span>
+                            </span>
                         )}
                     </div>
-                    
+
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-separate border-spacing-y-3">
                             <thead>
@@ -360,8 +370,8 @@ export default function AdminDashboard() {
                             </thead>
                             <tbody>
                                 {paginatedRequests.map((req) => (
-                                    <tr key={req.id} className="group bg-primary/5 hover:bg-primary/10 transition-all rounded-2xl overflow-hidden h-[100px]">
-                                        <td className="px-6 py-4 max-w-[300px]">
+                                    <tr key={req.id} className="group bg-primary/5 hover:bg-primary/10 transition-all h-[100px]">
+                                        <td className="px-6 py-4 max-w-[300px] rounded-l-3xl">
                                             <div className="flex flex-col justify-center h-full">
                                                 <span className="text-sm font-bold text-text-main group-hover:text-primary transition-colors line-clamp-2 leading-tight mb-1">{req.title}</span>
                                                 <span className="text-[10px] font-medium text-text-dim truncate group-hover:text-text-main/60 transition-colors">#{req.id} • {req.affected_system}</span>
@@ -391,7 +401,7 @@ export default function AdminDashboard() {
                                         <td className="px-6 py-4">
                                             <span className="text-xs text-text-dim tabular-nums flex items-center h-full">{new Date(req.planned_date).toLocaleDateString('fr-FR')}</span>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-6 py-4 text-right rounded-r-3xl">
                                             <div className="flex items-center justify-end h-full">
                                                 <Link to={`/admin/changes/${req.id}`} className="p-2 inline-flex items-center justify-center rounded-xl bg-primary/10 hover:bg-primary/20 hover:text-text-main text-text-dim transition-all">
                                                     <ChevronRight size={14} />
@@ -408,14 +418,14 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-between mt-10 pt-8 border-t border-white/5">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-dim">Page {currentPage} sur {totalPages}</p>
                                 <div className="flex gap-4">
-                                    <button 
+                                    <button
                                         disabled={currentPage === 1}
                                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                         className="px-6 py-2 rounded-xl bg-primary/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-text-dim hover:text-text-main hover:bg-primary/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
                                     >
                                         Précédent
                                     </button>
-                                    <button 
+                                    <button
                                         disabled={currentPage === totalPages}
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                         className="px-6 py-2 rounded-xl bg-primary/20 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/30 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
@@ -440,10 +450,9 @@ export default function AdminDashboard() {
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-text-main">Administration</h3>
                             <div className="flex items-center gap-4">
-                                <Link to="/admin/users?create=true" className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-[#0F051E] transition-all shadow-lg shadow-primary/5">
+                                <button onClick={() => setShowUserForm(true)} className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-[#0F051E] transition-all shadow-lg shadow-primary/5">
                                     <UserPlus size={16} />
-                                </Link>
-                                <Users size={16} className="text-text-dim/20" />
+                                </button>
                             </div>
                         </div>
                         <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
@@ -452,7 +461,7 @@ export default function AdminDashboard() {
                             ))}
                         </div>
                     </div>
-                    
+
                     {/* Insights Summary */}
                     <div className="bg-gradient-to-br from-primary/20 to-transparent border border-primary/20 p-8 rounded-[3rem] relative overflow-hidden group">
                         <div className="relative z-10 flex flex-col justify-between h-full">
@@ -469,6 +478,22 @@ export default function AdminDashboard() {
                     </div>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={confirmDelete !== null}
+                onConfirm={executeDelete}
+                onCancel={() => setConfirmDelete(null)}
+                title="Suppression"
+                message="Cette action est irréversible. L'utilisateur et toutes ses données associées seront définitivement supprimés du système."
+                confirmText="Supprimer"
+                cancelText="Annuler"
+                danger={true}
+            />
+            <UserFormModal
+                isOpen={showUserForm}
+                onClose={() => setShowUserForm(false)}
+                onSuccess={() => { setShowUserForm(false); loadData(); }}
+            />
         </div>
     );
 }

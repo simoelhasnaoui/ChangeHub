@@ -178,24 +178,41 @@ class ChangeRequestController extends Controller {
         return response()->json($changeRequest);
     }
 
+    // Appeal (rejected → pending_approval)
+    public function appeal(Request $request, ChangeRequest $changeRequest) {
+        $this->authorize('appeal', $changeRequest);
+
+        $request->validate([
+            'comment' => 'required|string',
+        ]);
+
+        $this->transition($changeRequest, 'pending_approval', "Appel interjeté : " . $request->comment, $request->user()->id);
+
+        // Notify all Approvers
+        $approvers = \App\Models\User::where('role', 'approver')->get();
+        \Illuminate\Support\Facades\Notification::send($approvers, new \App\Notifications\ChangeRequestNotification(
+            "Un appel a été soumis pour la demande: '{$changeRequest->title}'.",
+            "/approver/changes/{$changeRequest->id}"
+        ));
+
+        return response()->json($changeRequest);
+    }
+
     // Update status — implementer (approved → in_progress → done)
     public function updateStatus(Request $request, ChangeRequest $changeRequest) {
         $this->authorize('updateStatus', $changeRequest);
 
         $request->validate([
-            'status'  => 'required|in:in_progress,done',
+            'status'  => 'required|in:approved,in_progress,done',
             'comment' => 'nullable|string',
         ]);
 
-        $allowed = [
-            'approved'    => 'in_progress',
-            'in_progress' => 'done',
-        ];
-
-        abort_if(
-            ($allowed[$changeRequest->status] ?? null) !== $request->status,
+        $statuses = ['approved', 'in_progress', 'done'];
+        
+        abort_unless(
+            in_array($changeRequest->status, $statuses) && in_array($request->status, $statuses),
             422,
-            'Transition de statut invalide.'
+            'Transition de statut invalide pour ce type de dossier.'
         );
 
         $this->transition($changeRequest, $request->status, $request->input('comment') ?? '', $request->user()->id);

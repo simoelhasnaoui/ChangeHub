@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-    Activity, ShieldCheck, Clock, FileText, 
+import {
+    Activity, ShieldCheck, Clock, FileText,
     Filter, ChevronRight, CheckCircle, XCircle,
     TrendingUp, Search, AlertTriangle, Users
 } from 'lucide-react'
@@ -69,7 +69,7 @@ export default function ApproverDashboard() {
 
     const filteredRequests = useMemo(() => {
         let res = [...requests]
-        
+
         // Tab Filtering
         if (filter !== 'all') {
             res = res.filter(r => r.status === filter)
@@ -78,8 +78,8 @@ export default function ApproverDashboard() {
         // Search Filtering
         if (searchQuery) {
             const q = searchQuery.toLowerCase()
-            res = res.filter(r => 
-                (r.title && r.title.toLowerCase().includes(q)) || 
+            res = res.filter(r =>
+                (r.title && r.title.toLowerCase().includes(q)) ||
                 (r.affected_system && r.affected_system.toLowerCase().includes(q)) ||
                 (r.requester?.name && r.requester.name.toLowerCase().includes(q))
             )
@@ -108,14 +108,14 @@ export default function ApproverDashboard() {
 
     return (
         <div className="space-y-12 pb-20 font-inter max-w-[1600px] mx-auto overflow-visible">
-            
+
             {/* ── HEADER ── */}
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-white/5">
                 <div className="space-y-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.6em] text-primary">DECISION_TERMINAL_V4</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.6em] text-primary">DECISION_TERMINAL</p>
                     <h1 className="text-5xl font-light tracking-tight text-white leading-none">Console <span className="font-medium text-white/40 group-hover:text-white transition-colors">Approbateur</span></h1>
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#B5A1C2]/40">
-                        {stats.pending > 0 
+                        {stats.pending > 0
                             ? `${stats.pending} demandes nécessitent une action immédiate`
                             : 'Flux décisionnel à jour • Aucune action requise'}
                     </p>
@@ -132,7 +132,7 @@ export default function ApproverDashboard() {
 
             {/* ── INTERVENTION FLUX ── */}
             <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] shadow-2xl p-8 xl:p-12 transition-all">
-                
+
                 {/* Tabs & Title */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 mb-12">
                     <div>
@@ -150,11 +150,10 @@ export default function ApproverDashboard() {
                             <button
                                 key={tab.key}
                                 onClick={() => setFilter(tab.key)}
-                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                    filter === tab.key 
-                                    ? 'bg-primary text-[#0F051E] shadow-xl shadow-primary/20' 
-                                    : 'text-[#B5A1C2]/40 hover:text-white'
-                                }`}
+                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === tab.key
+                                        ? 'bg-primary text-[#0F051E] shadow-xl shadow-primary/20'
+                                        : 'text-[#B5A1C2]/40 hover:text-white'
+                                    }`}
                             >
                                 {tab.label}
                             </button>
@@ -176,8 +175,8 @@ export default function ApproverDashboard() {
                         </thead>
                         <tbody>
                             {paginatedRequests.map((req) => (
-                                <tr key={req.id} className="group bg-white/[0.02] hover:bg-white/[0.05] transition-all rounded-2xl overflow-hidden h-[100px]">
-                                    <td className="px-6 py-4 max-w-[350px]">
+                                <tr key={req.id} className="group bg-white/[0.02] hover:bg-white/[0.05] transition-all h-[100px]">
+                                    <td className="px-6 py-4 max-w-[350px] rounded-l-3xl">
                                         <div className="flex flex-col justify-center h-full">
                                             <span className="text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-tight mb-1">{req.title}</span>
                                             <span className="text-[10px] font-medium text-[#B5A1C2]/40 truncate">#{req.id} • {req.affected_system}</span>
@@ -205,14 +204,13 @@ export default function ApproverDashboard() {
                                     <td className="px-6 py-4">
                                         <span className="text-xs text-[#B5A1C2]/40 tabular-nums">{new Date(req.planned_date).toLocaleDateString('fr-FR')}</span>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <Link 
-                                            to={`/approver/changes/${req.id}`} 
-                                            className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                                req.status === 'pending_approval' 
-                                                ? 'bg-primary text-[#0F051E] shadow-lg shadow-primary/20 hover:scale-105' 
-                                                : 'bg-white/5 text-[#B5A1C2] hover:bg-white/10'
-                                            }`}
+                                    <td className="px-6 py-4 text-right rounded-r-3xl">
+                                        <Link
+                                            to={`/approver/changes/${req.id}`}
+                                            className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${req.status === 'pending_approval'
+                                                    ? 'bg-primary text-[#0F051E] shadow-lg shadow-primary/20 hover:scale-105'
+                                                    : 'bg-white/5 text-[#B5A1C2] hover:bg-white/10'
+                                                }`}
                                         >
                                             {req.status === 'pending_approval' ? 'Examiner' : 'Consulter'}
                                         </Link>
@@ -227,14 +225,14 @@ export default function ApproverDashboard() {
                         <div className="flex items-center justify-between mt-12 pt-8 border-t border-white/5">
                             <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/20">Terminal Page {currentPage} / {totalPages}</p>
                             <div className="flex gap-4">
-                                <button 
+                                <button
                                     disabled={currentPage === 1}
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/60 hover:text-white transition-all disabled:opacity-20"
                                 >
                                     Précédent
                                 </button>
-                                <button 
+                                <button
                                     disabled={currentPage === totalPages}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     className="px-6 py-2.5 rounded-xl bg-primary/20 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/30 transition-all disabled:opacity-20"

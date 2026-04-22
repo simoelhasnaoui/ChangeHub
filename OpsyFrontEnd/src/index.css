@@ -1,26 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --opsy-body: #2B1042;
-  --opsy-text: #E8E0F0;
-  --opsy-text-dim: rgba(213, 203, 229, 0.4);
-  --opsy-glass: rgba(15, 5, 30, 0.85);
-  --opsy-surface: rgba(21, 5, 34, 0.4);
-  --opsy-border: rgba(213, 203, 229, 0.4);
-  --opsy-primary: #D5CBE5;
-  --opsy-shadow: 0 15px 50px 0 rgba(0, 0, 0, 0.6);
+  --ChangeHub-body: #2B1042;
+  --ChangeHub-text: #E8E0F0;
+  --ChangeHub-text-dim: rgba(213, 203, 229, 0.4);
+  --ChangeHub-glass: rgba(15, 5, 30, 0.85);
+  --ChangeHub-surface: rgba(21, 5, 34, 0.4);
+  --ChangeHub-border: rgba(213, 203, 229, 0.4);
+  --ChangeHub-primary: #D5CBE5;
+  --ChangeHub-shadow: 0 15px 50px 0 rgba(0, 0, 0, 0.6);
 }
 
 @theme {
-  --color-primary: var(--opsy-primary);
-  --color-body: var(--opsy-body);
-  --color-text-main: var(--opsy-text);
-  --color-text-dim: var(--opsy-text-dim);
-  --color-surface: var(--opsy-surface);
+  --color-primary: var(--ChangeHub-primary);
+  --color-body: var(--ChangeHub-body);
+  --color-text-main: var(--ChangeHub-text);
+  --color-text-dim: var(--ChangeHub-text-dim);
+  --color-surface: var(--ChangeHub-surface);
 
-  --glass-bg: var(--opsy-glass);
-  --glass-border: var(--opsy-border);
-  --shadow-card: var(--opsy-shadow);
+  --glass-bg: var(--ChangeHub-glass);
+  --glass-border: var(--ChangeHub-border);
+  --shadow-card: var(--ChangeHub-shadow);
   
   --color-primary-hover: #B5A1C2;
   --color-primary-light: rgba(213, 203, 229, 0.1);

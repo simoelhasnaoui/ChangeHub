@@ -94,7 +94,25 @@ class UserController extends Controller {
     public function destroy(Request $request, User $user) {
         abort_if(! $request->user()->isAdmin(), 403);
         abort_if($request->user()->id === $user->id, 422, 'Vous ne pouvez pas vous supprimer vous-même.');
-        $user->delete();
-        return response()->json(['message' => 'Utilisateur supprimé.']);
+        
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($user) {
+                // Delete user's change histories
+                \Illuminate\Support\Facades\DB::table('change_histories')->where('user_id', $user->id)->delete();
+                
+                // Delete user's change requests 
+                // (MySQL will automatically cascade delete the histories/analysis linked to these requests)
+                \Illuminate\Support\Facades\DB::table('change_requests')->where('requester_id', $user->id)->delete();
+                
+                // Finally, delete the user
+                $user->delete();
+            });
+            
+            return response()->json(['message' => 'Utilisateur et ses données associés supprimés.']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur critique lors de la suppression de l\'utilisateur : ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

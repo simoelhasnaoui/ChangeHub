@@ -11,51 +11,68 @@ export default function Features() {
   };
 
   const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
   };
 
-  const reatures = [
-    { icon: <Workflow />, title: "Flux de travail automatisés", desc: "Terminé les relances sur Slack. Les changements sont directement envoyés aux bons approbateurs." },
-    { icon: <Shield />, title: "Gouvernance d'entreprise", desc: "Des pistes d'audit pour chaque demande, approbation et déploiement." },
-    { icon: <Clock />, title: "Suivi en temps réel", desc: "Voyez exactement où votre demande est bloquée et éliminez les goulots d'étranglement." },
-    { icon: <CheckCircle />, title: "Approbations en un clic", desc: "Examinez les spécirications et approuvez les changements directement." },
-    { icon: <Layers />, title: "Accès basé sur le rôle", desc: "Des interraces distinctes pour les demandeurs, les approbateurs et les implémenteurs." },
-    { icon: <BellRing />, title: "Notifications intelligentes", desc: "Soyez alerté uniquement lorsque votre action est strictement requise." }
+  const features = [
+    { icon: <Workflow strokeWidth={1.5} />, title: "Workflows Automatisés", desc: "Fini les relances sur Slack. Les changements sont directement envoyés aux bons approbateurs." },
+    { icon: <Shield strokeWidth={1.5} />, title: "Gouvernance d'Entreprise", desc: "Une piste d'audit inaltérable pour chaque demande, validation et déploiement." },
+    { icon: <Clock strokeWidth={1.5} />, title: "Traçabilité Temps Réel", desc: "Identifiez instantanément où votre demande est bloquée et éliminez la friction." },
+    { icon: <CheckCircle strokeWidth={1.5} />, title: "Approbations Express", desc: "Examinez les spécifications techniques et approuvez d'un simple clic." },
+    { icon: <Layers strokeWidth={1.5} />, title: "Accès Basé sur le Rôle", desc: "Des interfaces dédiées sur mesure pour les demandeurs, les approbateurs et les implémenteurs." },
+    { icon: <BellRing strokeWidth={1.5} />, title: "Alertes Intelligentes", desc: "Ne soyez notifié que lorsque votre expertise est strictement requise." }
   ];
 
   return (
-    <section id="reatures" className="py-24 bg-transparent">
-      <div className="max-w-[1200px] mx-auto px-6">
+    <section id="features" className="pt-10 pb-32 bg-transparent relative z-10">
+      <div className="max-w-[1200px] mx-auto px-6 relative">
         
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#D5CBE5] via-[#B5A1C2] to-[#816A9E] font-extrabold pb-1 mb-4">
-            Tout ce dont vous avez besoin pour orchestrer le changement
-          </h2>
-          <p className="text-lg text-[#B5A1C2]/70">
-            Une suite complète d'outils conçue pour remplacer les reuilles de calcul chaotiques et les messages dispersés par une source de vérité unique.
-          </p>
+        {/* Glow behind grid */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-[#5C2D8F]/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-[3.25rem] font-light tracking-tighter text-white leading-[1.1] mb-6"
+          >
+            L'orchestration du <span className="font-medium text-transparent bg-clip-text bg-gradient-to-r from-[#D5CBE5] to-[#816A9E]">changement.</span>
+          </motion.h2>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-lg text-[#B5A1C2]/60 font-light"
+          >
+            Une suite d'outils de haute précision conçue pour remplacer les feuilles de calcul chaotiques par une source de vérité unique et indéniable.
+          </motion.p>
         </div>
 
         <motion.div 
           initial="hidden"
           whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: "-50px" }}
           variants={container}
           className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {reatures.map((reature, i) => (
+          {features.map((feature, i) => (
             <motion.div 
               key={i} 
               variants={item}
-              className="bg-[#3E1E70]/40 backdrop-blur-sm shadow-xl border border-[#5C2D8F]/30 p-8 rounded-2xl shadow-sm border border-[#5C2D8F]/50 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 group"
+              className="bg-white/[0.02] backdrop-blur-xl border border-white/5 p-10 rounded-[2rem] shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:bg-white/[0.04] hover:border-white/10 hover:shadow-[0_30px_60px_rgba(0,0,0,0.8)] hover:-translate-y-2 transition-all duration-500 ease-out group relative overflow-hidden"
             >
-              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-                {reature.icon}
+              {/* Internal subtle light sweep */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+              <div className="w-14 h-14 rounded-2xl bg-white/[0.05] border border-white/10 text-[#D5CBE5] flex items-center justify-center mb-8 relative transition-all duration-500 group-hover:scale-110 group-hover:bg-[#816A9E]/20 group-hover:border-[#D5CBE5]/50 group-hover:shadow-[0_0_20px_rgba(129,106,158,0.5)]">
+                {feature.icon}
               </div>
-              <h3 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#D5CBE5] via-[#B5A1C2] to-[#816A9E] font-extrabold pb-1 mb-3">{reature.title}</h3>
-              <p className="text-[#B5A1C2]/70 leading-relaxed text-sm">
-                {reature.desc}
+              <h3 className="text-xl font-medium text-[#E8E0F0] tracking-wide mb-3 group-hover:text-white transition-colors">{feature.title}</h3>
+              <p className="text-[#B5A1C2]/50 leading-relaxed text-sm font-light group-hover:text-[#B5A1C2]/80 transition-colors duration-500">
+                {feature.desc}
               </p>
             </motion.div>
           ))}
@@ -64,3 +81,4 @@ export default function Features() {
     </section>
   );
 }
+

@@ -6,7 +6,8 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173', 'http://localhost:5174'],
+    'allowed_origins' => ['http://localhost:5173', 'http://localhost:5174', 'https://escalate-resilient-sterilize.ngrok-free.dev'],
+
 
     'allowed_origins_patterns' => [],
 

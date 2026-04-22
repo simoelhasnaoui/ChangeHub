@@ -21,7 +21,7 @@ class User extends Authenticatable {
         return $this->hasMany(ChangeRequest::class, 'requester_id');
     }
     public function changeRequestsAsImplementer() {
-        return $this->hasMany(ChangeRequest::class, 'implementer_id');
+        return $this->belongsToMany(ChangeRequest::class, 'change_request_implementer', 'user_id', 'change_request_id');
     }
     public function isAdmin():       bool { return $this->role === 'admin'; }
     public function isApprover():    bool { return $this->role === 'approver'; }

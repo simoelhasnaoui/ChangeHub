@@ -6,8 +6,24 @@ import {
     ArrowLeft, ShieldCheck, XCircle, CheckCircle2, 
     AlertCircle, UserCheck, MessageSquare, Info, 
     Server, Layers, Calendar, User, History,
-    ChevronRight, Save, Send
+    ChevronRight, Save, Send, Activity, Globe, 
+    Terminal, Cpu
 } from 'lucide-react'
+
+const STATUS_MAP = {
+    draft: { label: 'Brouillon', color: '#B5A1C2', bg: 'bg-[#B5A1C2]/10' },
+    pending_approval: { label: 'En attente', color: '#f59e0b', bg: 'bg-amber-500/10', glow: 'shadow-[0_0_30px_rgba(245,158,11,0.2)]' },
+    approved: { label: 'Approuvé', color: '#3b82f6', bg: 'bg-blue-500/10' },
+    in_progress: { label: 'En cours', color: '#6366f1', bg: 'bg-indigo-500/10' },
+    done: { label: 'Terminé', color: '#10b981', bg: 'bg-emerald-500/10' },
+    rejected: { label: 'Rejeté', color: '#f43f5e', bg: 'bg-rose-500/10' },
+}
+
+const GLOWS = {
+    pending_approval: 'from-amber-500/15 via-transparent to-transparent',
+    approved: 'from-blue-500/15 via-transparent to-transparent',
+    rejected: 'from-rose-500/15 via-transparent to-transparent',
+}
 
 export default function ReviewChange() {
     const { id } = useParams()
@@ -104,48 +120,75 @@ export default function ReviewChange() {
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-12 pb-20 font-inter">
-            {/* ── HEADER ── */}
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-white/5">
-                <div className="space-y-4">
+            {/* ── ATMOSPHERIC BACKGROUND ── */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className={`absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] opacity-20 bg-gradient-to-br ${GLOWS[cr.status] || 'from-primary/10 to-transparent'}`} />
+            </div>
+
+            {/* ── CINEMATIC HEADER ── */}
+            <div className="relative z-10 space-y-10 pb-12 border-b border-white/5">
+                <div className="flex items-center justify-between">
                     <Link 
                         to="/approver" 
-                        className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 hover:text-primary transition-colors"
+                        className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-[#B5A1C2]/40 hover:text-primary transition-all"
                     >
-                        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-                        Retour au registre
+                        <div className="p-2 rounded-lg bg-white/5 group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                        </div>
+                        Back_to_Queue
                     </Link>
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-4xl font-light tracking-tight text-white leading-none">Examen du <span className="font-medium text-primary">Changement</span></h1>
+                    <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20">
+                        <span className="text-primary/40">AUDIT_SESSION</span>
+                        <span className="w-1 h-1 rounded-full bg-white/10" />
+                        <span>NODE_ID: REQ-{cr.id}</span>
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#B5A1C2]/20">ID_SOURCE: REQ-{cr.id}</p>
+                </div>
+
+                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
+                    <div className="space-y-6 max-w-3xl">
+                        <div className="flex items-center gap-4">
+                            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-white/10 ${STATUS_MAP[cr.status]?.bg} ${STATUS_MAP[cr.status]?.glow || ''}`} style={{ color: STATUS_MAP[cr.status]?.color }}>
+                                {STATUS_MAP[cr.status]?.label?.toUpperCase()}
+                            </div>
+                            <span className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40">Decision_Intelligence_Module</span>
+                        </div>
+                        <h1 className="text-6xl font-light tracking-tighter text-white leading-[0.9] lg:text-7xl">
+                            {cr.title}
+                        </h1>
+                    </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 {/* ── LEFT: SPECIFICATIONS ── */}
-                <div className="lg:col-span-12 xl:col-span-7 space-y-10">
-                    <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-10 xl:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+                <div className="lg:col-span-8 space-y-10">
+                    <div className="bg-[#0F051E]/60 backdrop-blur-3xl border border-white/5 p-10 xl:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-primary/10 transition-colors" />
                         
-                        <div className="space-y-10">
-                            <div>
-                                <h2 className="text-2xl font-bold text-white mb-6 leading-tight">{cr.title}</h2>
-                                <p className="text-sm text-[#D5CBE5]/80 leading-relaxed whitespace-pre-wrap mb-10">{cr.description}</p>
+                        <div className="space-y-12">
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40 flex items-center gap-3">
+                                    <Terminal size={16} className="text-primary" /> Technical_Brief
+                                </h3>
+                                <div className="relative pl-6">
+                                    <div className="absolute left-0 top-0 bottom-0 w-px bg-primary/20 shadow-[0_0_10px_rgba(209,140,255,0.3)]" />
+                                    <p className="text-sm font-mono text-[#D5CBE5]/90 leading-relaxed whitespace-pre-wrap">{cr.description}</p>
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 p-8 bg-white/[0.02] rounded-3xl border border-white/5">
+                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                 {[
                                     { label: 'Type', value: cr.change_type?.name, icon: <Layers size={14} /> },
-                                    { label: 'Cible', value: cr.affected_system, icon: <Server size={14} /> },
-                                    { label: 'Date', value: new Date(cr.planned_date).toLocaleDateString('fr-FR'), icon: <Calendar size={14} /> },
-                                    { label: 'Demandeur', value: cr.requester?.name, icon: <User size={14} /> },
-                                    { label: 'Risque', value: cr.risk_level === 'high' ? 'ÉLEVE' : cr.risk_level === 'medium' ? 'MOYEN' : 'FAIBLE', icon: <ShieldCheck size={14} /> },
+                                    { label: 'System', value: cr.affected_system, icon: <Server size={14} /> },
+                                    { label: 'Schedule', value: new Date(cr.planned_date).toLocaleDateString('fr-FR'), icon: <Calendar size={14} /> },
+                                    { label: 'Author', value: cr.requester?.name, icon: <User size={14} /> },
+                                    { label: 'Risk', value: cr.risk_level === 'high' ? 'HIGH' : cr.risk_level === 'medium' ? 'MEDIUM' : 'LOW', icon: <ShieldCheck size={14} />, color: cr.risk_level === 'high' ? 'text-rose-400' : cr.risk_level === 'medium' ? 'text-amber-400' : 'text-emerald-400' },
                                 ].map((item, idx) => (
-                                    <div key={idx} className="space-y-1">
-                                        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20">
-                                            {item.icon} {item.label}
-                                        </div>
-                                        <p className="text-xs font-bold text-[#D5CBE5]">{item.value}</p>
+                                    <div key={idx} className="p-4 bg-white/[0.02] rounded-2xl border border-white/5 group/card hover:bg-white/[0.05] transition-all">
+                                        <div className="text-primary/40 group-hover/card:text-primary transition-colors mb-3">{item.icon}</div>
+                                        <p className="text-[8px] font-black uppercase tracking-widest text-[#B5A1C2]/20 mb-1">{item.label}</p>
+                                        <p className={`text-[10px] font-bold truncate ${item.color || 'text-white'}`}>{item.value}</p>
                                     </div>
                                 ))}
                             </div>
@@ -180,7 +223,7 @@ export default function ReviewChange() {
                 </div>
 
                 {/* ── RIGHT: DECISION CONSOLE ── */}
-                <div className="lg:col-span-12 xl:col-span-5 space-y-10">
+                <div className="lg:col-span-4 space-y-10">
                     <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[3.5rem] shadow-2xl space-y-10 border-t-4 border-t-primary/20 sticky top-12">
                         <div className="space-y-2 text-center lg:text-left">
                             <h3 className="text-xs font-black uppercase tracking-[0.4em] text-primary">Decision_Console</h3>

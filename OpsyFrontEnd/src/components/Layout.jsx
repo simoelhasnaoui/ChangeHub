@@ -5,8 +5,10 @@ import { useNavigate, NavLink, useLocation } from 'react-router-dom'
 import { Search, Shield, X, Key, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearch } from '../context/SearchContext'
-import OpsyLogo from './OpsyLogo'
+import ChangeHubLogo from './ChangeHubLogo'
 import NotificationCenter from './NotificationCenter'
+import GlobalSearch from './GlobalSearch'
+import api from '../api/axios'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const SNAP_DIST = 100;
@@ -69,20 +71,22 @@ const navItems = {
   admin: [
     { to: '/admin', label: 'Dashboard', icon: icons.dashboard },
     { to: '/admin/users', label: 'Utilisateurs', icon: icons.users },
-    { to: '/admin/changes', label: 'Changements', icon: icons.changes },
+    { to: '/admin/changes', label: 'Interventions', icon: icons.changes },
   ],
   approver: [
-    { to: '/approver', label: 'Tableau de bord', icon: icons.dashboard },
-    { to: '/approver/changes', label: 'Demandes', icon: icons.requests },
+    { to: '/approver', label: 'Dashboard', icon: icons.dashboard },
+    { to: '/approver/changes', label: 'File d\'attente', icon: icons.requests },
+    { to: '/approver/changes?history=true', label: 'Historique', icon: icons.changes },
   ],
   implementer: [
-    { to: '/implementer', label: 'Tableau de bord', icon: icons.dashboard },
-    { to: '/implementer/changes', label: 'Mes demandes', icon: icons.requests },
+    { to: '/implementer', label: 'Dashboard', icon: icons.dashboard },
+    { to: '/implementer/changes', label: 'Pipeline', icon: icons.requests },
+    { to: '/implementer/changes?archived=true', label: 'Archives', icon: icons.changes },
   ],
   requester: [
-    { to: '/requester', label: 'Tableau de bord', icon: icons.dashboard },
+    { to: '/requester', label: 'Dashboard', icon: icons.dashboard },
     { to: '/requester/changes', label: 'Mes demandes', icon: icons.requests },
-    { to: '/requester/new', label: 'Nouvelle demande', icon: icons.new },
+    { to: '/requester/new', label: 'Nouvelle requête', icon: icons.new },
   ],
 }
 
@@ -115,10 +119,14 @@ export default function Layout({ children }) {
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
   const [activeHomeIndex, setActiveHomeIndex] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState({ requests: [], users: [] });
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const offsetRef = useRef({ x: 0, y: 0 });
   const posRef = useRef(pos);
   posRef.current = pos;
+  const searchBarRef = useRef(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -217,8 +225,18 @@ export default function Layout({ children }) {
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("mouseup", stopDrag);
       window.removeEventListener("touchend", stopDrag);
-    };
+    }
   }, [dragging, onMove, stopDrag]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchBarRef.current && !searchBarRef.current.contains(event.target)) {
+        setIsSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     await logout()
@@ -258,8 +276,26 @@ export default function Layout({ children }) {
 
   const links = navItems[user?.role] || []
   const isActive = (to) => {
-    if (to === `/${user?.role}`) return location.pathname === to
-    return location.pathname.startsWith(to)
+    const [pathname, search] = to.split('?')
+    const isBaseRoleUrl = to === `/${user?.role}`
+
+    if (isBaseRoleUrl) return location.pathname === pathname
+
+    const pathnameMatches = location.pathname.startsWith(pathname)
+    if (!pathnameMatches) return false
+
+    // If 'to' has search params, current location must have them too
+    if (search) {
+      return location.search.includes(search)
+    }
+
+    // If 'to' has NO search params, current location must NOT have 'archived' or 'history'
+    // to avoid overlapping with those specific sub-views
+    if (!search && (location.search.includes('archived=true') || location.search.includes('history=true'))) {
+      return false
+    }
+
+    return true
   }
 
   const isNearHome = (homeIndex) =>
@@ -268,6 +304,24 @@ export default function Layout({ children }) {
   const pulseHome = pulse ? homes[activeHomeIndex] : null;
 
   const { searchQuery, setSearchQuery } = useSearch()
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.length >= 2) {
+        try {
+          const res = await api.get(`/search?q=${searchQuery}`);
+          setSearchResults(res.data);
+          setIsSearchOpen(true);
+        } catch (err) {
+          console.error('Search failed', err);
+        }
+      } else {
+        setIsSearchOpen(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   return (
     <div ref={containerRef} className={`min-h-screen flex bg-body text-[#E8E0F0] font-inter relative overflow-hidden select-none ${dragging ? 'cursor-grabbing' : ''}`}>
@@ -342,8 +396,8 @@ export default function Layout({ children }) {
           {[...links, { label: 'Alertes' }, { label: 'Sécurité' }, { label: 'Sortie' }].map((_, i) => (
             <div
               key={i}
-              className={`absolute h-12 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${currentSide === 'left' ? 'left-8 origin-left' : 'right-8 origin-right'
-                } w-[204px] rounded-full ${hoveredIndex === i ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
+              className={`absolute h-12 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${currentSide === 'left' ? 'left-1 origin-left' : 'right-1 origin-right'
+                } w-[210px] rounded-full ${hoveredIndex === i && !(isNotifOpen && (i === links.length)) ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
                 }`}
               style={{
                 top: i < links.length
@@ -370,12 +424,12 @@ export default function Layout({ children }) {
         <div className="relative z-20 flex flex-col items-center py-5 pb-8 h-full">
           {/* Top Handle / Logo */}
           <div className="drag-handle w-12 h-12 rounded-full cursor-grab active:cursor-grabbing flex items-center justify-center shrink-0 mb-3 hover:scale-105 active:scale-95 transition-all text-[#D5CBE5]">
-            <OpsyLogo size={40} />
+            <ChangeHubLogo size={40} />
           </div>
 
           <div className="w-8 h-px bg-purple-700/30 mb-2" />
 
-          <nav className="flex-1 flex flex-col items-center gap-4 w-full">
+          <nav className="flex-1 flex flex-col items-center gap-4 w-full relative">
             {links.map(({ to, label, icon }, i) => {
               const active = isActive(to)
               const isHovered = hoveredIndex === i;
@@ -389,33 +443,36 @@ export default function Layout({ children }) {
                   onMouseLeave={() => setHoveredIndex(null)}
                   onClick={() => setHoveredIndex(null)}
                 >
-                  {/* Outer container — h-12 gives items-center a rererence axis */}
-                  <div className={`flex items-center h-12 transition-all duration-500 ${isHovered
-                      ? (currentSide === 'left'
-                        ? 'w-[200px] pl-6 translate-x-[68px]'
-                        : 'w-[200px] pr-6 -translate-x-[68px]')
-                      : 'w-12'
+                  {/* Outer container — absolute pinning to edge */}
+                  <div className={`absolute h-12 transition-all duration-500 flex items-center ${currentSide === 'left'
+                      ? `left-0 flex-row ${isHovered ? 'w-[210px]' : 'w-full'}`
+                      : `right-0 flex-row-reverse ${isHovered ? 'w-[210px]' : 'w-full'}`
                     }`}>
 
-                    {/* Icon */}
-                    <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full transition-all duration-500 z-30 group-hover/item:scale-90 active:scale-80 ${active ? 'text-[#D5CBE5]' : 'text-[#B5A1C2]/70'
-                      }`}>
-                      <span className={`${active
-                          ? 'text-[#D5CBE5]'
-                          : 'text-[#B5A1C2]/40 group-hover/item:text-[#D5CBE5]/80'
-                        } transition-transform duration-500`}>
+                    {/* Icon Container (Fixed position in mass) */}
+                    <div className="w-[74px] h-12 flex-shrink-0 flex items-center justify-center relative z-30">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${active ? 'text-[#D5CBE5] bg-white/5' : 'text-[#B5A1C2]/40 group-hover/item:text-[#D5CBE5]'
+                        }`}>
                         {icon}
-                      </span>
+                      </div>
                     </div>
 
-                    {/* Label — leading-none removes invisible line-height space */}
-                    <div className={`flex-1 flex items-center justify-center transition-all duration-500 h-12 ${isHovered ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
-                      }`}>
-                      <span className="text-[11px] font-bold uppercase tracking-widest text-[#D5CBE5] whitespace-nowrap leading-none h-full flex items-center">
-                        {label}
-                      </span>
+                    {/* Label Container (Expansion) */}
+                    <div className={`flex-1 flex items-center transition-all duration-500 overflow-hidden ${isHovered ? 'opacity-100 px-4' : 'opacity-0 w-0'
+                      } ${currentSide === 'left' ? 'justify-start' : 'justify-end'}`}>
+                      <div className="w-[136px] overflow-hidden">
+                        <div className={`${isHovered ? (label.length > 10 ? 'animate-marquee' : '') : ''} whitespace-nowrap flex w-max justify-start`}>
+                          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#D5CBE5] py-1">
+                            {label}
+                          </span>
+                          {label.length > 10 && (
+                            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#D5CBE5] py-1 ml-12">
+                              {label}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-
                   </div>
                 </NavLink>
               )
@@ -425,9 +482,9 @@ export default function Layout({ children }) {
           <div className="w-8 h-px bg-purple-700/30 mb-2" />
 
           {/* System Actions Area */}
-          <div className="flex flex-col items-center gap-4 mb-2 w-full">
+          <div className="flex flex-col items-center gap-4 mb-2 w-full relative">
             {[
-              { id: 'notif', label: 'Alertes', icon: <NotificationCenter />, component: true },
+              { id: 'notif', label: 'Alertes', icon: <NotificationCenter side={currentSide} onToggle={setIsNotifOpen} />, component: true },
               { id: 'pwd', label: 'Sécurité', icon: icons.password, onClick: () => setShowPwdModal(true) },
               { id: 'logout', label: 'Sortie', icon: icons.logout, onClick: handleLogout, danger: true }
             ].map((item, i) => {
@@ -442,23 +499,36 @@ export default function Layout({ children }) {
                   onMouseLeave={() => setHoveredIndex(null)}
                   onClick={item.onClick}
                 >
-                  <div className={`flex items-center h-12 transition-all duration-500 ${isHovered
-                      ? (currentSide === 'left' ? 'w-[200px] pl-6 translate-x-[68px]' : 'w-[200px] pr-6 -translate-x-[68px]')
-                      : 'w-12'
+                  <div className={`absolute h-12 transition-all duration-500 flex items-center ${currentSide === 'left'
+                      ? `left-0 flex-row ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'w-[210px]' : 'w-full'}`
+                      : `right-0 flex-row-reverse ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'w-[210px]' : 'w-full'}`
                     }`}>
+
                     {/* Icon */}
-                    <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full transition-all duration-500 z-30 ${item.danger ? 'text-rose-400 group-hover/sys:text-rose-500' : 'text-[#816A9E]/60 group-hover/sys:text-[#D5CBE5]'
-                      }`}>
-                      {item.icon}
+                    <div className="w-[74px] h-12 flex-shrink-0 flex items-center justify-center relative z-30">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${item.danger ? 'text-rose-400 group-hover/sys:text-rose-500' : 'text-[#816A9E]/60 group-hover/sys:text-[#D5CBE5]'
+                        }`}>
+                        {item.icon}
+                      </div>
                     </div>
 
                     {/* Label */}
-                    <div className={`flex-1 flex items-center justify-center transition-all duration-500 h-12 ${isHovered ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
-                      }`}>
-                      <span className={`text-[11px] font-bold uppercase tracking-widest whitespace-nowrap leading-none h-full flex items-center ${item.danger ? 'text-rose-400' : 'text-[#D5CBE5]'
-                        }`}>
-                        {item.label}
-                      </span>
+                    <div className={`flex-1 flex items-center transition-all duration-500 overflow-hidden ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'opacity-100 px-4' : 'opacity-0 w-0'
+                      } ${currentSide === 'left' ? 'justify-start' : 'justify-end'}`}>
+                      <div className="w-[136px] overflow-hidden">
+                        <div className={`${isHovered ? (item.label.length > 10 ? 'animate-marquee' : '') : ''} whitespace-nowrap flex w-max justify-start`}>
+                          <span className={`text-[11px] font-bold uppercase tracking-[0.2em] py-1 ${item.danger ? 'text-rose-400' : 'text-[#D5CBE5]'
+                            }`}>
+                            {item.label}
+                          </span>
+                          {item.label.length > 10 && (
+                            <span className={`text-[11px] font-bold uppercase tracking-[0.2em] py-1 ml-12 ${item.danger ? 'text-rose-400' : 'text-[#D5CBE5]'
+                              }`}>
+                              {item.label}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -485,18 +555,28 @@ export default function Layout({ children }) {
 
           {/* Global Command Center (Search Bar) */}
           <div className="flex justify-center mb-14 group">
-            <div className="relative w-full max-w-2xl">
+            <div ref={searchBarRef} className="relative w-full max-w-2xl">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-primary opacity-30 group-focus-within:opacity-100 group-focus-within:scale-110 transition-all" size={20} />
               <input
                 type="text"
                 placeholder="Rechercher des demandes, systèmes ou utilisateurs..."
                 className="w-full bg-[#0F051E]/60 backdrop-blur-3xl border border-white/10 rounded-[2rem] pl-16 pr-8 py-5 text-sm text-white placeholder:text-[#B5A1C2]/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-[#0F051E]/90 transition-all shadow-[0_20px_50px_rgba(0,0,0,0.4)]"
                 value={searchQuery}
+                onFocus={() => searchQuery.length >= 2 && setIsSearchOpen(true)}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
                 <span className="text-[10px] font-black tracking-tighter text-[#B5A1C2]/20 border border-white/5 px-2 py-1 rounded-md uppercase">⌘ K</span>
               </div>
+
+              {/* Global Search Results Overlay */}
+              <GlobalSearch
+                results={searchResults}
+                isOpen={isSearchOpen}
+                onClose={() => setIsSearchOpen(false)}
+                setSearchQuery={setSearchQuery}
+                role={user?.role}
+              />
             </div>
           </div>
 
@@ -528,7 +608,7 @@ export default function Layout({ children }) {
                   <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mx-auto text-primary mb-6 shadow-[0_0_30px_rgba(209,140,255,0.1)]">
                     <Shield size={32} />
                   </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">PROTOCOL_SECURITY_V4</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">PROTOCOL_SECURITY</p>
                   <h2 className="text-3xl font-light text-white tracking-tight uppercase leading-none">Accès <span className="font-medium text-white/40 text-2xl">Sécurisé</span></h2>
                   <p className="text-[10px] text-[#B5A1C2]/40 font-black uppercase tracking-[0.2em] leading-relaxed mx-auto max-w-xs">
                     {isForcedPwdChange
@@ -625,6 +705,13 @@ export default function Layout({ children }) {
         @keyframes pulseRing {
           0%   { transform: scale(0.6); opacity: 0.8; border-color: rgba(213, 203, 229,0.8); }
           100% { transform: scale(1.6); opacity: 0; border-color: rgba(213, 203, 229,0); }
+        }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(calc(-50% - 1.5rem)); }
+        }
+        .animate-marquee {
+          animation: marquee 4s linear infinite;
         }
       `}</style>
     </div>

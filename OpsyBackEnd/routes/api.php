@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ChangeTypeController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\StatsController;
+use App\Http\Controllers\Api\SearchController;
 
 // Public
 Route::post('/login',  [AuthController::class, 'login']);
@@ -14,6 +15,8 @@ Route::post('/login',  [AuthController::class, 'login']);
 // Protected
 Route::middleware('auth:sanctum')->group(function () {
     
+    // Global Search
+    Route::get('/search', [SearchController::class, 'globalSearch']);
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -43,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/change-requests/{changeRequest}/submit', [ChangeRequestController::class, 'submit']);
     Route::post('/change-requests/{changeRequest}/approve', [ChangeRequestController::class, 'approve']);
     Route::post('/change-requests/{changeRequest}/reject', [ChangeRequestController::class, 'reject']);
+    Route::post('/change-requests/{changeRequest}/appeal', [ChangeRequestController::class, 'appeal']);
     Route::post('/change-requests/{changeRequest}/update-status', [ChangeRequestController::class, 'updateStatus']);
     Route::post('/change-requests/{changeRequest}/validate', [ChangeRequestController::class, 'validateChange']);
 

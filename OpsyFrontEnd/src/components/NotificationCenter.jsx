@@ -4,10 +4,14 @@ import api from '../api/axios'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
-export default function NotificationCenter() {
+export default function NotificationCenter({ side = 'left', onToggle }) {
     const [notifications, setNotifications] = useState([])
     const [isOpen, setIsOpen] = useState(false)
     const dropdownRef = useRef(null)
+
+    useEffect(() => {
+        onToggle?.(isOpen)
+    }, [isOpen, onToggle])
 
     const fetchNotifications = async () => {
         try {
@@ -68,10 +72,10 @@ export default function NotificationCenter() {
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95, x: 20 }}
-                        animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95, x: 20 }}
-                        className="absolute bottom-16 left-0 w-[350px] bg-[#150522] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.8)] rounded-3xl z-[100] overflow-hidden backdrop-blur-3xl"
+                        initial={{ opacity: 0, scale: 0.9, x: side === 'left' ? -20 : 20 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, x: side === 'left' ? -20 : 20 }}
+                        className={`absolute bottom-0 ${side === 'left' ? 'left-[80px]' : 'right-[80px]'} w-[380px] bg-[#150522]/90 border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.9)] rounded-[2.5rem] z-[100] overflow-hidden backdrop-blur-3xl`}
                     >
                         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#E8E0F0]">Notifications</h3>

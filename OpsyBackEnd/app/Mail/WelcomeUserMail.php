@@ -32,7 +32,7 @@ class WelcomeUserMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Bienvenue sur Opsy !',
+            subject: 'Bienvenue sur ChangeHub !',
         );
     }
 
@@ -42,7 +42,7 @@ class WelcomeUserMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            htmlString: '<h3>Bienvenue sur Opsy, ' . $this->user->name . '!</h3>' .
+            htmlString: '<h3>Bienvenue sur ChangeHub, ' . $this->user->name . '!</h3>' .
                         '<p>Votre compte a été créé par l\'administrateur. Voici votre mot de passe temporaire : <strong>' . $this->password . '</strong></p>' .
                         '<p>Veuillez vous connecter pour le modifier immédiatement.</p>'
         );

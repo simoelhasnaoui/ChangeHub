@@ -7,8 +7,22 @@ import {
     ArrowLeft, Activity, CheckCircle2, AlertCircle, 
     FileText, ShieldCheck, Server, Layers, Calendar, 
     User, ChevronRight, Save, Download, Plus, Trash2,
-    Info, AlertTriangle, Clock
+    Info, AlertTriangle, Clock, Terminal, Globe, Cpu
 } from 'lucide-react'
+import ChangeHubSelect from '../../components/ui/ChangeHubSelect'
+
+
+const STATUS_MAP = {
+    approved: { label: 'Approuvé', color: '#3b82f6', bg: 'bg-blue-500/10' },
+    in_progress: { label: 'En cours', color: '#6366f1', bg: 'bg-indigo-500/10' },
+    done: { label: 'Terminé', color: '#10b981', bg: 'bg-emerald-500/10' },
+}
+
+const GLOWS = {
+    approved: 'from-blue-500/15 via-transparent to-transparent',
+    in_progress: 'from-indigo-500/15 via-transparent to-transparent',
+    done: 'from-emerald-500/15 via-transparent to-transparent',
+}
 
 export default function ManageChange() {
     const { id } = useParams()
@@ -89,77 +103,77 @@ export default function ManageChange() {
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-12 pb-20 font-inter">
-            {/* ── HEADER ── */}
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-white/5">
-                <div className="space-y-4">
+            {/* ── ATMOSPHERIC BACKGROUND ── */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] opacity-20 bg-gradient-to-br ${GLOWS[cr.status] || 'from-primary/10 to-transparent'}`} />
+            </div>
+
+            {/* ── CINEMATIC HEADER ── */}
+            <div className="relative z-10 space-y-10 pb-12 border-b border-white/5">
+                <div className="flex items-center justify-between">
                     <Link 
                         to="/implementer" 
-                        className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 hover:text-primary transition-colors"
+                        className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-[#B5A1C2]/40 hover:text-primary transition-all"
                     >
-                        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-                        Retour au pipeline
+                        <div className="p-2 rounded-lg bg-white/5 group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                        </div>
+                        Back_to_Pipeline
                     </Link>
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-4xl font-light tracking-tight text-white leading-none capitalize">{cr.title}</h1>
-                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-white/5 whitespace-nowrap shadow-2xl bg-primary/10 text-primary`}>
-                            {cr.status}
-                        </span>
+                    <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20">
+                        <span className="text-primary/40">EXECUTION_NODE</span>
+                        <span className="w-1 h-1 rounded-full bg-white/10" />
+                        <span>SESSION_ID: REQ-{cr.id}</span>
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#B5A1C2]/20">EXECUTION_NODE: REQ-{cr.id}</p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    {cr.analysis && (
-                        <button
-                            onClick={() => generateReport(cr, cr.analysis)}
-                            className="group flex items-center gap-3 bg-white/5 text-white font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-2xl hover:bg-white/10 border border-white/5 transition-all shadow-2xl"
-                        >
-                            <Download size={16} className="text-primary" />
-                            Générer PV
-                        </button>
-                    )}
+                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
+                    <div className="space-y-6 max-w-3xl">
+                        <div className="flex items-center gap-4">
+                            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-white/10 ${STATUS_MAP[cr.status]?.bg} ${STATUS_MAP[cr.status]?.glow || ''}`} style={{ color: STATUS_MAP[cr.status]?.color }}>
+                                {STATUS_MAP[cr.status]?.label?.toUpperCase() || cr.status?.toUpperCase()}
+                            </div>
+                            <span className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40">Active_Operations_Protocol</span>
+                        </div>
+                        <h1 className="text-6xl font-light tracking-tighter text-white leading-[0.9] lg:text-7xl">
+                            {cr.title}
+                        </h1>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0">
+                        {cr.analysis && (
+                            <button
+                                onClick={() => generateReport(cr, cr.analysis)}
+                                className="group relative flex items-center gap-4 bg-white/5 text-white font-black uppercase tracking-[0.2em] text-[11px] px-10 py-5 rounded-[2rem] hover:bg-white/10 border border-white/10 transition-all shadow-2xl overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Download size={18} className="text-primary relative z-10" />
+                                <span className="relative z-10">Export_Protocol_PV</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                {/* ── LEFT: SPECS & STATUS ── */}
-                <div className="lg:col-span-12 xl:col-span-5 space-y-10">
-                    <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-10 xl:p-12 rounded-[3.5rem] shadow-2xl space-y-8 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+                {/* ── LEFT COLUMN: PROTOCOL ── */}
+                <div className="lg:col-span-8 space-y-10">
+                    <div className="bg-[#0F051E]/60 backdrop-blur-3xl border border-white/5 p-10 xl:p-12 rounded-[3.5rem] shadow-2xl space-y-10 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-primary/10 transition-colors" />
                         
-                        <div className="space-y-8">
+                        <div className="space-y-10">
                             <div>
                                 <h3 className="text-xs font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40 flex items-center gap-3 mb-6">
-                                    <FileText size={16} className="text-primary" /> Spécifications
+                                    <Terminal size={16} className="text-primary" /> Technical_Brief
                                 </h3>
-                                <p className="text-sm text-[#D5CBE5]/80 leading-relaxed whitespace-pre-wrap">{cr.description}</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6 p-6 bg-white/[0.02] rounded-3xl border border-white/5">
-                                {[
-                                    { label: 'Cible', value: cr.affected_system, icon: <Server size={14} /> },
-                                    { label: 'Type', value: cr.change_type?.name, icon: <Layers size={14} /> },
-                                    { label: 'Date', value: new Date(cr.planned_date).toLocaleDateString('fr-FR'), icon: <Calendar size={14} /> },
-                                    { label: 'Auteur', value: cr.requester?.name, icon: <User size={14} /> },
-                                ].map((item, idx) => (
-                                    <div key={idx} className="space-y-1">
-                                        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20">
-                                            {item.icon} {item.label}
-                                        </div>
-                                        <p className="text-[11px] font-bold text-[#D5CBE5]">{item.value}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {cr.approval_conditions && (
-                                <div className="bg-amber-500/5 border border-amber-500/20 p-8 rounded-[2.5rem] space-y-4">
-                                    <div className="flex items-center gap-3 text-amber-500">
-                                        <ShieldCheck size={18} />
-                                        <span className="text-[10px] font-black uppercase tracking-widest">Conditions d'implémentation</span>
-                                    </div>
-                                    <p className="text-xs text-[#E8E0F0] leading-relaxed italic">"{cr.approval_conditions}"</p>
+                                <div className="relative pl-6">
+                                    <div className="absolute left-0 top-0 bottom-0 w-px bg-primary/20" />
+                                    <p className="text-sm font-mono text-[#D5CBE5]/90 leading-relaxed whitespace-pre-wrap">{cr.description}</p>
                                 </div>
-                            )}
+                            </div>
+
+
                         </div>
 
                         {/* STATUS TRANSITIONS */}
@@ -207,15 +221,13 @@ export default function ManageChange() {
                             </div>
                         )}
                     </div>
-                </div>
 
-                {/* ── RIGHT: POST-CHANGE ANALYSIS ── */}
-                <div className="lg:col-span-12 xl:col-span-7">
+                    {/* Post-Change Analysis (Moved to Left) */}
                     <AnimatePresence mode="wait">
                         {cr.status === 'done' ? (
                             <motion.div 
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-10 xl:p-14 rounded-[3.5rem] shadow-2xl space-y-10"
                             >
                                 <div className="flex justify-between items-center">
@@ -316,17 +328,19 @@ export default function ManageChange() {
                                                             </div>
                                                             <div className="space-y-2">
                                                                 <label className="text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20 ml-1">Sévérité technique</label>
-                                                                <select required value={inc.severity || 'low'}
-                                                                    onChange={e => {
-                                                                        const newInc = [...analysis.incidents]; newInc[i].severity = e.target.value; setAnalysis(a => ({ ...a, incidents: newInc }));
+                                                                <ChangeHubSelect 
+                                                                    value={inc.severity || 'low'}
+                                                                    onChange={val => {
+                                                                        const newInc = [...analysis.incidents]; newInc[i].severity = val; setAnalysis(a => ({ ...a, incidents: newInc }));
                                                                     }}
-                                                                    className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-xs text-[#E8E0F0] focus:ring-1 focus:ring-primary/50 transition-all appearance-none cursor-pointer"
-                                                                >
-                                                                    <option value="low" className="bg-[#150522]">FAIBLE</option>
-                                                                    <option value="medium" className="bg-[#150522]">MOYENNE</option>
-                                                                    <option value="high" className="bg-[#150522]">HAUTE</option>
-                                                                    <option value="critical" className="bg-[#150522]">CRITIQUE</option>
-                                                                </select>
+                                                                    options={[
+                                                                        { value: 'low', label: 'FAIBLE' },
+                                                                        { value: 'medium', label: 'MOYENNE' },
+                                                                        { value: 'high', label: 'HAUTE' },
+                                                                        { value: 'critical', label: 'CRITIQUE' },
+                                                                    ]}
+                                                                />
+
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2">
@@ -375,17 +389,56 @@ export default function ManageChange() {
                                 </form>
                             </motion.div>
                         ) : (
-                            <div className="py-32 text-center bg-white/[0.02] border-2 border-dashed border-white/5 rounded-[4rem] space-y-6">
-                                <Activity size={48} className="mx-auto text-[#B5A1C2]/10 animate-pulse" />
+                            <div className="py-20 text-center bg-white/[0.02] border-2 border-dashed border-white/5 rounded-[4rem] space-y-6">
+                                <Activity size={32} className="mx-auto text-[#B5A1C2]/10 animate-pulse" />
                                 <div className="space-y-2">
-                                    <p className="text-sm font-bold text-[#E8E0F0]">Module d'analyse verrouillé</p>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/20">Activez l'intervention et marquez-la comme terminée pour débloquer le rapport final.</p>
+                                    <p className="text-sm font-bold text-[#E8E0F0]">Module d'Analyse Post-Changement</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/20 italic">Terminez l'intervention pour débloquer le rapport d'incident.</p>
                                 </div>
                             </div>
                         )}
                     </AnimatePresence>
                 </div>
-            </div>
+
+                {/* ── RIGHT COLUMN: SIDEBAR ── */}
+                <div className="lg:col-span-4 space-y-10">
+                    <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[3rem] space-y-8">
+                        <div className="grid grid-cols-1 gap-4">
+                            {[
+                                { label: 'Cible Système', value: cr.affected_system, icon: <Server size={14} /> },
+                                { label: 'Type Intervention', value: cr.change_type?.name, icon: <Layers size={14} /> },
+                                { label: 'Auteur Dossier', value: cr.requester?.name, icon: <User size={14} /> },
+                                { label: 'Risk_Level', value: cr.risk_level?.toUpperCase(), icon: <ShieldCheck size={14} />, color: cr.risk_level === 'high' ? 'text-rose-400' : 'text-primary' },
+                            ].map((item, idx) => (
+                                <div key={idx} className="flex items-center gap-4 p-4 bg-white/[0.02] rounded-2xl border border-white/5">
+                                    <div className="p-2.5 bg-white/5 rounded-xl text-primary/60">{item.icon}</div>
+                                    <div>
+                                        <p className="text-[8px] font-black uppercase tracking-widest text-[#B5A1C2]/20 mb-0.5">{item.label}</p>
+                                        <p className={`text-[10px] font-bold ${item.color || 'text-white'}`}>{item.value}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {cr.approval_conditions && (
+                        <div className="bg-amber-500/5 border border-amber-500/20 p-8 rounded-[3rem] space-y-4">
+                            <div className="flex items-center gap-3 text-amber-500">
+                                <AlertTriangle size={18} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Conditions Requises</span>
+                            </div>
+                            <p className="text-xs text-amber-500/80 leading-relaxed italic">"{cr.approval_conditions}"</p>
+                        </div>
+                    )}
+
+                    <div className="bg-indigo-500/5 border border-indigo-500/20 p-8 rounded-[3rem] space-y-4">
+                        <div className="flex items-center gap-3 text-indigo-400">
+                            <Clock size={18} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Target_Window</span>
+                        </div>
+                        <p className="text-xs text-[#E8E0F0] font-bold">{new Date(cr.planned_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                    </div>
+                </div>            </div>
         </div>
     )
 }
