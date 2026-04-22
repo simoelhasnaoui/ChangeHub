@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Bell, Check, ExternalLink, X } from 'lucide-react'
+import { Bell, Check, ExternalLink, X, Info, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import api from '../api/axios'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function NotificationCenter() {
     const [notifications, setNotifications] = useState([])
@@ -55,65 +56,77 @@ export default function NotificationCenter() {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-[#B5A1C2]/70 hover:bg-[#5C2D8F]/20 hover:text-[#D5CBE5] transition-all relative group"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-[#B5A1C2]/40 hover:bg-white/5 hover:text-primary transition-all relative group"
             >
                 <Bell size={18} className={notifications.length > 0 ? 'animate-pulse' : ''} />
                 {notifications.length > 0 && (
-                    <span className="absolute top-2 right-2 w-4 h-4 bg-primary text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-[#2B1042]">
-                        {notifications.length}
+                    <span className="absolute top-3 right-3 w-3 h-3 bg-primary rounded-full border-2 border-[#150522] shadow-[0_0_10px_rgba(209,140,255,0.6)]">
                     </span>
                 )}
             </button>
 
-            {isOpen && (
-                <div className="absolute top-12 left-0 w-80 bg-[#2B1042] border border-[#5C2D8F] shadow-2xl rounded-xl z-[60] overflow-hidden backdrop-blur-xl">
-                    <div className="p-4 border-b border-[#5C2D8F]/50 flex justify-between items-center bg-[#3E1E70]/20">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-[#D5CBE5]">Notifications</h3>
-                        {notifications.length > 0 && (
-                            <button onClick={markAllAsRead} className="text-[10px] text-primary hover:underline font-medium">
-                                Tout marquer comme lu
-                            </button>
-                        )}
-                    </div>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95, x: 20 }}
+                        animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95, x: 20 }}
+                        className="absolute bottom-16 left-0 w-[350px] bg-[#150522] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.8)] rounded-3xl z-[100] overflow-hidden backdrop-blur-3xl"
+                    >
+                        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#E8E0F0]">Notifications</h3>
+                            {notifications.length > 0 && (
+                                <button onClick={markAllAsRead} className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline">
+                                    Tout marquer
+                                </button>
+                            )}
+                        </div>
 
-                    <div className="max-h-96 overflow-y-auto custom-scrollbar">
-                        {notifications.length === 0 ? (
-                            <div className="p-8 text-center">
-                                <p className="text-xs text-[#B5A1C2]/50 italic">Aucune nouvelle notification</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-[#5C2D8F]/20">
-                                {notifications.map(n => (
-                                    <div key={n.id} className="p-4 hover:bg-[#5C2D8F]/10 transition-colors group">
-                                        <div className="flex gap-3">
-                                            <div className="flex-1">
-                                                <p className="text-xs text-[#D5CBE5] leading-relaxed mb-2">
-                                                    {n.data.message}
-                                                </p>
-                                                <div className="flex items-center gap-3">
-                                                    <Link
-                                                        to={n.data.link}
-                                                        onClick={() => {markAsRead(n.id); setIsOpen(false)}}
-                                                        className="text-[10px] text-primary inline-flex items-center gap-1 hover:underline font-semibold"
-                                                    >
-                                                        Voir le détail <ExternalLink size={10} />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => markAsRead(n.id)}
-                                                        className="text-[10px] text-[#B5A1C2]/40 hover:text-green-400 inline-flex items-center gap-1 transition-colors"
-                                                    >
-                                                        <Check size={10} /> Lu
-                                                    </button>
+                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar p-2">
+                            {notifications.length === 0 ? (
+                                <div className="p-12 text-center space-y-4">
+                                    <div className="p-4 bg-white/5 rounded-full w-fit mx-auto opacity-10">
+                                        <Bell size={24} className="text-[#B5A1C2]" />
+                                    </div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/20">Aucun signal capturé</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-1">
+                                    {notifications.map(n => (
+                                        <div key={n.id} className="p-4 hover:bg-white/[0.03] rounded-2xl transition-all group relative border border-transparent hover:border-white/5">
+                                            <div className="flex gap-4">
+                                                <div className="mt-0.5 shrink-0 p-2 bg-primary/5 rounded-lg text-primary/40">
+                                                    <Info size={14} />
+                                                </div>
+                                                <div className="flex-1 space-y-3">
+                                                    <p className="text-[11px] font-medium text-[#D5CBE5] leading-relaxed">
+                                                        {n.data.message}
+                                                    </p>
+                                                    <div className="flex items-center gap-4">
+                                                        <Link
+                                                            to={n.data.link}
+                                                            onClick={() => { markAsRead(n.id); setIsOpen(false) }}
+                                                            className="text-[9px] font-black uppercase tracking-widest text-primary inline-flex items-center gap-1 hover:underline"
+                                                        >
+                                                            Accéder <ExternalLink size={10} />
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => markAsRead(n.id)}
+                                                            className="text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20 hover:text-emerald-400 inline-flex items-center gap-1 transition-colors"
+                                                        >
+                                                            <Check size={10} /> Acquitter
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }

@@ -4,7 +4,7 @@ import {
     Users, FileText, Clock, AlertTriangle,
     CheckCircle, XCircle, TrendingUp, Filter,
     ChevronRight, ArrowUpRight, Search, Trash2,
-    BarChart3, PieChart as PieChartIcon, Activity
+    BarChart3, PieChart as PieChartIcon, Activity, UserPlus
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import api from '../../api/axios'
@@ -39,31 +39,31 @@ const RISK_MAP = {
 const StatCard = ({ title, value, icon, color, trend }) => (
     <motion.div
         whileHover={{ y: -5 }}
-        className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-6 rounded-[2rem] flex flex-col justify-between shadow-2xl group relative overflow-hidden h-full"
+        className="bg-surface backdrop-blur-3xl border border-white/5 p-6 rounded-[2rem] flex flex-col justify-between shadow-2xl group relative overflow-hidden h-full"
     >
         <div className={`absolute top-0 right-0 w-24 h-24 blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity`} style={{ backgroundColor: color }} />
         <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="p-3 rounded-2xl bg-white/5">
-                {React.cloneElement(icon, { size: 20, color: color || '#B5A1C2' })}
+            <div className="p-3 rounded-2xl bg-primary/5">
+                {React.cloneElement(icon, { size: 20, color: color || 'var(--opsy-primary)' })}
             </div>
             {trend && <span className="text-[10px] font-black text-emerald-400">+{trend}%</span>}
         </div>
         <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#B5A1C2]/40 mb-1 whitespace-nowrap">{title}</p>
-            <p className="text-3xl font-light text-white tracking-tighter">{value}</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-dim mb-1 whitespace-nowrap">{title}</p>
+            <p className="text-3xl font-light text-text-main tracking-tighter">{value}</p>
         </div>
     </motion.div>
 );
 
 const ChartModule = ({ title, children, icon, onClear, isFiltered }) => (
-    <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-8 rounded-[3rem] shadow-2xl flex flex-col h-full">
+    <div className="bg-surface backdrop-blur-3xl border border-white/5 p-8 rounded-[3rem] shadow-2xl flex flex-col h-full">
         <div className="flex justify-between items-center mb-10">
             <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/5 rounded-2xl text-[#B5A1C2]">{icon}</div>
-                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[#E8E0F0]">{title}</h3>
+                <div className="p-3 bg-primary/5 rounded-2xl text-text-dim">{icon}</div>
+                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-text-main">{title}</h3>
             </div>
             {isFiltered && (
-                <button onClick={onClear} className="text-[9px] font-black uppercase tracking-widest text-[#D18CFF] hover:text-white transition-colors flex items-center gap-2">
+                <button onClick={onClear} className="text-[9px] font-black uppercase tracking-widest text-[#D18CFF] hover:text-text-main transition-colors flex items-center gap-2">
                     <Filter size={10} /> Effacer Filtre
                 </button>
             )}
@@ -75,19 +75,19 @@ const ChartModule = ({ title, children, icon, onClear, isFiltered }) => (
 );
 
 const UserRow = ({ user, onDelete }) => (
-    <div className="flex items-center justify-between p-4 bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl transition-all border border-white/5 group">
+    <div className="flex items-center justify-between p-4 bg-primary/5 hover:bg-primary/10 rounded-2xl transition-all border border-white/5 group">
         <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xs font-black text-white">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xs font-black text-text-main">
                 {user.name.charAt(0)}
             </div>
             <div>
-                <p className="text-sm font-bold text-white mb-0.5">{user.name}</p>
-                <p className="text-[10px] text-[#B5A1C2]/40 font-medium">{user.email}</p>
+                <p className="text-sm font-bold text-text-main mb-0.5">{user.name}</p>
+                <p className="text-[10px] text-text-dim font-medium">{user.email}</p>
             </div>
         </div>
         <div className="flex items-center gap-6">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40">{user.role}</span>
-            <button onClick={() => onDelete(user.id)} className="text-[#B5A1C2]/20 hover:text-rose-500 transition-colors">
+            <span className="text-[10px] font-black uppercase tracking-widest text-text-dim">{user.role}</span>
+            <button onClick={() => onDelete(user.id)} className="text-text-dim/40 hover:text-rose-500 transition-colors">
                 <Trash2 size={16} />
             </button>
         </div>
@@ -210,14 +210,14 @@ export default function AdminDashboard() {
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-white/5 relative">
                 <div className="space-y-4">
                     <p className="text-[11px] font-black uppercase tracking-[0.6em] text-primary">ADMIN_COMMAND_HUB_V4</p>
-                    <h1 className="text-5xl font-light tracking-tight text-white capitalize leading-none">Ravi de vous revoir, <span className="font-medium">{user?.name.split(' ')[0]}</span></h1>
+                    <h1 className="text-5xl font-light tracking-tight text-text-main capitalize leading-none">Ravi de vous revoir, <span className="font-medium">{user?.name.split(' ')[0]}</span></h1>
                 </div>
 
                 <div className="flex flex-col items-end">
                     <div className="flex items-center gap-6 mb-2">
                         <div className="text-right">
-                            <span className="text-3xl font-light text-white leading-none block">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#B5A1C2]/40">Flux Opérationnel</span>
+                            <span className="text-3xl font-light text-text-main leading-none block">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-text-dim">Flux Opérationnel</span>
                         </div>
                     </div>
                 </div>
@@ -333,11 +333,11 @@ export default function AdminDashboard() {
             {/* ── TABLES ROW ── */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
                 {/* Main Filtered Table */}
-                <div className="xl:col-span-8 bg-[#150522]/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] shadow-2xl p-8">
+                <div className="xl:col-span-8 bg-surface backdrop-blur-3xl border border-white/5 rounded-[3rem] shadow-2xl p-8">
                     <div className="flex justify-between items-center mb-8">
                         <div>
-                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[#E8E0F0]">Flux des Interventions</h3>
-                            <p className="text-[10px] text-[#B5A1C2]/40 mt-1">{filteredRequests.length} résultats correspondants</p>
+                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-text-main">Flux des Interventions</h3>
+                            <p className="text-[10px] text-text-dim mt-1">{filteredRequests.length} résultats correspondants</p>
                         </div>
                         {activeFilter && (
                              <span className="bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-primary/20">
@@ -349,7 +349,7 @@ export default function AdminDashboard() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-separate border-spacing-y-3">
                             <thead>
-                                <tr className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40">
+                                <tr className="text-[10px] font-black uppercase tracking-widest text-text-dim">
                                     <th className="px-6 py-4">Sujet / ID</th>
                                     <th className="px-6 py-4">Intervenant</th>
                                     <th className="px-6 py-4">Statut</th>
@@ -360,24 +360,24 @@ export default function AdminDashboard() {
                             </thead>
                             <tbody>
                                 {paginatedRequests.map((req) => (
-                                    <tr key={req.id} className="group bg-white/[0.02] hover:bg-white/[0.05] transition-all rounded-2xl overflow-hidden h-[100px]">
+                                    <tr key={req.id} className="group bg-primary/5 hover:bg-primary/10 transition-all rounded-2xl overflow-hidden h-[100px]">
                                         <td className="px-6 py-4 max-w-[300px]">
                                             <div className="flex flex-col justify-center h-full">
-                                                <span className="text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-tight mb-1">{req.title}</span>
-                                                <span className="text-[10px] font-medium text-[#B5A1C2]/40 truncate group-hover:text-[#B5A1C2]/60 transition-colors">#{req.id} • {req.affected_system}</span>
+                                                <span className="text-sm font-bold text-text-main group-hover:text-primary transition-colors line-clamp-2 leading-tight mb-1">{req.title}</span>
+                                                <span className="text-[10px] font-medium text-text-dim truncate group-hover:text-text-main/60 transition-colors">#{req.id} • {req.affected_system}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2 max-w-[150px] h-full">
-                                                <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[8px] font-black shrink-0">
+                                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-black shrink-0">
                                                     {req.requester?.name.charAt(0)}
                                                 </div>
-                                                <span className="text-xs text-[#E8E0F0] truncate">{req.requester?.name}</span>
+                                                <span className="text-xs text-text-main truncate">{req.requester?.name}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center h-full">
-                                                <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-white/5 whitespace-nowrap ${STATUS_MAP[req.status]?.bg || 'bg-white/5'} ${STATUS_MAP[req.status]?.color ? '' : 'text-[#B5A1C2]'}`} style={{ color: STATUS_MAP[req.status]?.color }}>
+                                                <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-white/5 whitespace-nowrap ${STATUS_MAP[req.status]?.bg || 'bg-primary/10'} ${STATUS_MAP[req.status]?.color ? '' : 'text-text-dim'}`} style={{ color: STATUS_MAP[req.status]?.color }}>
                                                     {STATUS_MAP[req.status]?.label || req.status}
                                                 </span>
                                             </div>
@@ -385,15 +385,15 @@ export default function AdminDashboard() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2 h-full">
                                                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: RISK_MAP[req.risk_level]?.color }} />
-                                                <span className="text-[10px] font-bold text-[#E8E0F0] uppercase tracking-tighter">{RISK_MAP[req.risk_level]?.label}</span>
+                                                <span className="text-[10px] font-bold text-text-main uppercase tracking-tighter">{RISK_MAP[req.risk_level]?.label}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-xs text-[#B5A1C2]/60 tabular-nums flex items-center h-full">{new Date(req.planned_date).toLocaleDateString('fr-FR')}</span>
+                                            <span className="text-xs text-text-dim tabular-nums flex items-center h-full">{new Date(req.planned_date).toLocaleDateString('fr-FR')}</span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end h-full">
-                                                <Link to={`/admin/changes/${req.id}`} className="p-2 inline-flex items-center justify-center rounded-xl bg-white/5 hover:bg-primary/20 hover:text-white text-[#B5A1C2] transition-all">
+                                                <Link to={`/admin/changes/${req.id}`} className="p-2 inline-flex items-center justify-center rounded-xl bg-primary/10 hover:bg-primary/20 hover:text-text-main text-text-dim transition-all">
                                                     <ChevronRight size={14} />
                                                 </Link>
                                             </div>
@@ -406,12 +406,12 @@ export default function AdminDashboard() {
                         {/* Pagination Controls */}
                         {totalPages > 1 && (
                             <div className="flex items-center justify-between mt-10 pt-8 border-t border-white/5">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#B5A1C2]/40">Page {currentPage} sur {totalPages}</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-dim">Page {currentPage} sur {totalPages}</p>
                                 <div className="flex gap-4">
                                     <button 
                                         disabled={currentPage === 1}
                                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        className="px-6 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2] hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+                                        className="px-6 py-2 rounded-xl bg-primary/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-text-dim hover:text-text-main hover:bg-primary/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
                                     >
                                         Précédent
                                     </button>
@@ -428,7 +428,7 @@ export default function AdminDashboard() {
                         {filteredRequests.length === 0 && (
                             <div className="py-20 text-center space-y-4">
                                 <Activity size={40} className="mx-auto text-white/5" />
-                                <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40">Aucune intervention ne correspond aux filtres</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-text-dim">Aucune intervention ne correspond aux filtres</p>
                             </div>
                         )}
                     </div>
@@ -436,10 +436,15 @@ export default function AdminDashboard() {
 
                 {/* User Administration */}
                 <div className="xl:col-span-4 space-y-8">
-                    <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] shadow-2xl p-8">
+                    <div className="bg-surface backdrop-blur-3xl border border-white/5 rounded-[3rem] shadow-2xl p-8">
                         <div className="flex justify-between items-center mb-8">
-                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[#E8E0F0]">Administration</h3>
-                            <Users size={16} className="text-primary/40" />
+                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-text-main">Administration</h3>
+                            <div className="flex items-center gap-4">
+                                <Link to="/admin/users?create=true" className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-[#0F051E] transition-all shadow-lg shadow-primary/5">
+                                    <UserPlus size={16} />
+                                </Link>
+                                <Users size={16} className="text-text-dim/20" />
+                            </div>
                         </div>
                         <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                             {allUsers.map(user => (
@@ -449,14 +454,14 @@ export default function AdminDashboard() {
                     </div>
                     
                     {/* Insights Summary */}
-                    <div className="bg-gradient-to-br from-[#D18CFF]/20 to-transparent border border-[#5C2D8F]/20 p-8 rounded-[3rem] relative overflow-hidden group">
+                    <div className="bg-gradient-to-br from-primary/20 to-transparent border border-primary/20 p-8 rounded-[3rem] relative overflow-hidden group">
                         <div className="relative z-10 flex flex-col justify-between h-full">
                             <div>
-                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white brightness-125 mb-2">Taux d'Incident Actuel</h3>
-                                <p className="text-[10px] text-[#E8E0F0]/60 leading-relaxed max-w-[200px]">Calculé sur la base de {metrics.totalReports} rapports de clôture analysés.</p>
+                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-text-main brightness-125 mb-2">Taux d'Incident Actuel</h3>
+                                <p className="text-[10px] text-text-main/60 leading-relaxed max-w-[200px]">Calculé sur la base de {metrics.totalReports} rapports de clôture analysés.</p>
                             </div>
                             <div className="mt-8 flex items-baseline gap-3">
-                                <span className="text-6xl font-light tracking-tighter text-white brightness-125">{metrics.incidentRate}%</span>
+                                <span className="text-6xl font-light tracking-tighter text-text-main brightness-125">{metrics.incidentRate}%</span>
                                 <ArrowUpRight className="text-rose-400 opacity-50" size={24} />
                             </div>
                         </div>

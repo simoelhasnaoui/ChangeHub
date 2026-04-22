@@ -1,22 +1,35 @@
 @import "tailwindcss";
 
+:root {
+  --opsy-body: #2B1042;
+  --opsy-text: #E8E0F0;
+  --opsy-text-dim: rgba(213, 203, 229, 0.4);
+  --opsy-glass: rgba(15, 5, 30, 0.85);
+  --opsy-surface: rgba(21, 5, 34, 0.4);
+  --opsy-border: rgba(213, 203, 229, 0.4);
+  --opsy-primary: #D5CBE5;
+  --opsy-shadow: 0 15px 50px 0 rgba(0, 0, 0, 0.6);
+}
+
 @theme {
-  --color-primary: #D5CBE5;
+  --color-primary: var(--opsy-primary);
+  --color-body: var(--opsy-body);
+  --color-text-main: var(--opsy-text);
+  --color-text-dim: var(--opsy-text-dim);
+  --color-surface: var(--opsy-surface);
+
+  --glass-bg: var(--opsy-glass);
+  --glass-border: var(--opsy-border);
+  --shadow-card: var(--opsy-shadow);
+  
   --color-primary-hover: #B5A1C2;
   --color-primary-light: rgba(213, 203, 229, 0.1);
-  --color-body: #2B1042;
   --color-surface: rgba(62, 30, 112, 0.4);
-  --color-text-main: #E8E0F0;
   --color-text-dim: rgba(213, 203, 229, 0.9);
   --font-inter: "Inter", sans-serif;
   --color-border: rgba(213, 203, 229, 0.3);
   
-  --shadow-card: 0 15px 50px 0 rgba(0, 0, 0, 0.6);
   --shadow-card-hover: 0 20px 60px rgba(0, 0, 0, 0.8), 0 5px 15px rgba(255,255,255,0.05);
-  
-  /* High-Contrast Obsidian Tokens */
-  --glass-bg: rgba(15, 5, 30, 0.85);
-  --glass-border: rgba(213, 203, 229, 0.4);
   --glass-reflection: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 100%);
 }
 
@@ -30,7 +43,7 @@
   overflow: hidden;
 }
 
-@utility glass-card::before {
+.glass-card::before {
   content: "";
   position: absolute;
   inset: 0;

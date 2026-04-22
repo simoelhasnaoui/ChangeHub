@@ -1,6 +1,12 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import api from '../../api/axios'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+    ArrowLeft, Send, Save, X, Info, 
+    Server, Calendar, ShieldAlert, Layers,
+    CheckCircle2, AlertCircle
+} from 'lucide-react'
 
 export default function NewRequest() {
     const navigate = useNavigate()
@@ -56,105 +62,190 @@ export default function NewRequest() {
         }
     }
 
-    if (initialFetch) return <div className="text-sm text-[#B5A1C2]/70 p-8">Chargement...</div>
+    if (initialFetch) {
+        return (
+            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6">
+                <div className="w-20 h-20 border-2 border-white/5 border-t-primary rounded-full animate-spin" />
+                <p className="text-[10px] font-black uppercase tracking-[0.5em] text-primary animate-pulse">Récupération du dossier...</p>
+            </div>
+        )
+    }
 
     return (
-        <div className="max-w-2xl">
-            <div className="mb-6">
-                <h1 className="text-xl font-semibold text-[#E8E0F0]">{isEdit ? 'Modifier le brouillon' : 'Nouvelle demande'}</h1>
-                <p className="text-sm text-[#B5A1C2]/70 mt-0.5">{isEdit ? 'Mettez à jour les informations de votre brouillon' : 'Remplissez les informations de votre demande de changement'}</p>
+        <div className="max-w-[1000px] mx-auto space-y-12 pb-20">
+            {/* ── HEADER ── */}
+            <div className="flex items-center justify-between">
+                <div className="space-y-4">
+                    <Link 
+                        to="/requester/changes" 
+                        className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 hover:text-primary transition-colors"
+                    >
+                        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                        Retour au flux
+                    </Link>
+                    <h1 className="text-4xl font-light tracking-tight text-white capitalize leading-none">
+                        {isEdit ? 'Mise à jour' : 'Initialisation'} <span className="font-medium text-primary">Intervention</span>
+                    </h1>
+                </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="bg-[#3E1E70]/40 backdrop-blur-[24px] border border-[#5C2D8F]/30 shadow-card rounded-xl border border-[#5C2D8F]/50 p-6 space-y-5">
-                <div>
-                    <label className="block text-sm font-medium text-[#D5CBE5]/90 mb-1">Titre</label>
-                    <input
-                        required value={form.title}
-                        onChange={e => set('title', e.target.value)}
-                        className="w-full border border-[#5C2D8F]/50 bg-[#3E1E70]/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Ex: Déploiement version 2.1"
-                    />
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-8">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+                >
+                    {/* LEFT SECTION: MAIN INFO */}
+                    <div className="lg:col-span-8 space-y-8">
+                        <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-8 xl:p-12 rounded-[3.5rem] shadow-2xl space-y-8 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+                            
+                            <div className="space-y-6">
+                                <div className="space-y-2 group">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1">Sujet de l'intervention</label>
+                                    <input
+                                        required 
+                                        value={form.title}
+                                        onChange={e => set('title', e.target.value)}
+                                        className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-4 text-sm text-white placeholder:text-[#816A9E]/30 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:bg-white/[0.06] transition-all"
+                                        placeholder="Ex: Optimisation du cluster Kubernetes"
+                                    />
+                                </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-[#D5CBE5]/90 mb-1">Description</label>
-                    <textarea
-                        required value={form.description}
-                        onChange={e => set('description', e.target.value)}
-                        rows={3}
-                        className="w-full border border-[#5C2D8F]/50 bg-[#3E1E70]/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Décrivez le changement à effectuer..."
-                    />
-                </div>
+                                <div className="space-y-2 group">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1">Description détaillée</label>
+                                    <textarea
+                                        required 
+                                        value={form.description}
+                                        onChange={e => set('description', e.target.value)}
+                                        rows={6}
+                                        className="w-full bg-white/[0.03] border border-white/10 rounded-3xl px-6 py-4 text-sm text-white placeholder:text-[#816A9E]/30 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:bg-white/[0.06] transition-all resize-none"
+                                        placeholder="Décrivez les étapes techniques et les objectifs du changement..."
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-[#D5CBE5]/90 mb-1">Type de changement</label>
-                        <select
-                            required value={form.change_type_id}
-                            onChange={e => set('change_type_id', e.target.value)}
-                            className="w-full border border-[#5C2D8F]/50 bg-[#3E1E70]/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {/* RIGHT SECTION: CONFIGURATION */}
+                    <div className="lg:col-span-4 space-y-8">
+                        {/* Technical Selects */}
+                        <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-8 rounded-[3rem] shadow-2xl space-y-8">
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1">
+                                        <Layers size={14} className="text-primary/40" /> Catégorie
+                                    </label>
+                                    <select
+                                        required 
+                                        value={form.change_type_id}
+                                        onChange={e => set('change_type_id', e.target.value)}
+                                        className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all appearance-none cursor-pointer"
+                                    >
+                                        <option value="" className="bg-[#150522]">Sélectionner...</option>
+                                        {types.map(t => <option key={t.id} value={t.id} className="bg-[#150522]">{t.name}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1">
+                                        <Server size={14} className="text-primary/40" /> Système Affecté
+                                    </label>
+                                    <input
+                                        required 
+                                        value={form.affected_system}
+                                        onChange={e => set('affected_system', e.target.value)}
+                                        className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white placeholder:text-[#816A9E]/30 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                        placeholder="Ex: DB-PROD-01"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1">
+                                        <Calendar size={14} className="text-primary/40" /> Date Prévue
+                                    </label>
+                                    <input
+                                        type="date" 
+                                        required 
+                                        value={form.planned_date}
+                                        onChange={e => set('planned_date', e.target.value)}
+                                        className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all [color-scheme:dark]"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1">
+                                        <ShieldAlert size={14} className="text-primary/40" /> Niveau de Risque
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {['low', 'medium', 'high'].map((level) => (
+                                            <button
+                                                key={level}
+                                                type="button"
+                                                onClick={() => set('risk_level', level)}
+                                                className={`py-3 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
+                                                    form.risk_level === level 
+                                                    ? 'bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(209,140,255,0.1)]' 
+                                                    : 'bg-white/5 border-white/5 text-[#B5A1C2]/40 hover:border-white/10'
+                                                }`}
+                                            >
+                                                {level === 'low' ? 'Faible' : level === 'medium' ? 'Moyen' : 'Élevé'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Guidelines / Tips */}
+                        <div className="bg-primary/5 border border-primary/10 p-8 rounded-[3rem] space-y-4">
+                            <div className="flex items-center gap-3 text-primary">
+                                <Info size={16} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Conseil d'expert</span>
+                            </div>
+                            <p className="text-[11px] text-[#B5A1C2]/40 leading-relaxed italic">
+                                Assurez-vous que la description contient un plan de retour arrière précis pour faciliter l'approbation.
+                            </p>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* ── FOOTER ACTIONS ── */}
+                <AnimatePresence>
+                    {error && (
+                        <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-rose-500/10 border border-rose-500/20 p-6 rounded-3xl flex items-center gap-4 text-xs font-bold text-rose-400"
                         >
-                            <option value="">Sélectionner...</option>
-                            {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                    </div>
+                            <AlertCircle size={18} />
+                            {error}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                    <div>
-                        <label className="block text-sm font-medium text-[#D5CBE5]/90 mb-1">Système affecté</label>
-                        <input
-                            required value={form.affected_system}
-                            onChange={e => set('affected_system', e.target.value)}
-                            className="w-full border border-[#5C2D8F]/50 bg-[#3E1E70]/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Ex: Serveur web production"
-                        />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-[#D5CBE5]/90 mb-1">Date planifiée</label>
-                        <input
-                            type="date" required value={form.planned_date}
-                            onChange={e => set('planned_date', e.target.value)}
-                            className="w-full border border-[#5C2D8F]/50 bg-[#3E1E70]/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-[#D5CBE5]/90 mb-1">Niveau de risque</label>
-                        <select
-                            required value={form.risk_level}
-                            onChange={e => set('risk_level', e.target.value)}
-                            className="w-full border border-[#5C2D8F]/50 bg-[#3E1E70]/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="">Sélectionner...</option>
-                            <option value="low">Faible</option>
-                            <option value="medium">Moyen</option>
-                            <option value="high">Élevé</option>
-                        </select>
-                    </div>
-                </div>
-
-                {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
-                        {error}
-                    </div>
-                )}
-
-                <div className="flex gap-3 pt-2">
-                    <button
-                        type="submit" disabled={loading}
-                        className="bg-primary hover:shadow-xl hover:shadow-[#5C2D8F]/50 hover:-translate-y-0.5 transition-all disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
-                    >
-                        {loading ? 'Envoi...' : (isEdit ? 'Enregistrer les modifications' : 'Créer la demande')}
-                    </button>
+                <div className="flex items-center justify-end gap-6 pt-8 border-t border-white/5">
                     <button
                         type="button"
                         onClick={() => navigate('/requester/changes')}
-                        className="text-[#B5A1C2]/70 hover:text-[#D5CBE5]/90 text-sm px-4 py-2 rounded-lg border border-[#5C2D8F]/50 hover:bg-[#5C2D8F]/30 transition-colors"
+                        className="text-[10px] font-black uppercase tracking-[0.2em] text-[#B5A1C2]/40 hover:text-white transition-colors"
                     >
-                        Annuler
+                        Abandonner
+                    </button>
+                    <button
+                        type="submit" 
+                        disabled={loading}
+                        className="group flex items-center gap-3 bg-primary text-[#0F051E] font-black uppercase tracking-widest text-[11px] px-10 py-5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-2xl disabled:opacity-50"
+                    >
+                        {loading ? (
+                            'Synchronisation...'
+                        ) : (
+                            <>
+                                {isEdit ? <Save size={16} /> : <Send size={16} />}
+                                {isEdit ? 'Enregistrer' : 'Soumettre au comité'}
+                            </>
+                        )}
                     </button>
                 </div>
             </form>
