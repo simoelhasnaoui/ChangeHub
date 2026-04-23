@@ -3,7 +3,7 @@ import { Check } from 'lucide-react';
 
 export default function UseCases() {
   return (
-    <section className="py-32 bg-transparent relative z-10">
+    <section id="use-cases" className="py-32 bg-transparent relative z-10 scroll-mt-28">
       <div className="max-w-[1200px] mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center">
         
         {/* Left Side: Text */}

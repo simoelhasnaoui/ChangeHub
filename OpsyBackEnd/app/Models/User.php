@@ -13,15 +13,24 @@ class User extends Authenticatable {
         'name', 'email', 'password', 'role',
         'force_password_change', 'department', 'job_title',
         'phone', 'employee_id', 'status',
-        'github_id', 'github_login', 'github_token', 'github_connected_at'
+        'github_id', 'github_login', 'github_token', 'github_connected_at',
+        'google_id', 'google_email', 'google_refresh_token', 'google_connected_at',
     ];
-    protected $hidden   = ['password', 'remember_token', 'github_token'];
+    protected $hidden   = ['password', 'remember_token', 'github_token', 'google_refresh_token'];
     protected $casts    = [
         'password' => 'hashed',
         'force_password_change' => 'boolean',
         'github_connected_at' => 'datetime',
         'github_token' => 'encrypted',
+        'google_connected_at' => 'datetime',
+        'google_refresh_token' => 'encrypted',
     ];
+
+    /** When set, in-app notifications are also sent to this address (Gmail via your SMTP). */
+    public function routeNotificationForMail(): ?string
+    {
+        return $this->google_email ?: null;
+    }
 
     public function changeRequestsAsRequester() {
         return $this->hasMany(ChangeRequest::class, 'requester_id');

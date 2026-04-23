@@ -689,8 +689,8 @@ export default function ImplementerDashboard() {
           {!ghConnected ? (
             <div className="py-10 text-center bg-white/[0.02] border-2 border-dashed border-white/5 rounded-[2.5rem] space-y-3">
               <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/30">Connect GitHub to list repositories.</p>
-              <Link to="/implementer/changes" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">
-                Open GitHub connect →
+              <Link to="/implementer/github" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">
+                Ouvrir la page GitHub →
               </Link>
             </div>
           ) : (

@@ -1,16 +1,26 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ChangeHubLogo from '../components/ChangeHubLogo'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Lock, AlertCircle, ArrowRight, ShieldCheck, ArrowLeft } from 'lucide-react'
+import { Mail, Lock, AlertCircle, ArrowRight, ShieldCheck, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [info, setInfo] = useState('')
+
+  useEffect(() => {
+    if (location.state?.resetOk) {
+      setInfo('Mot de passe réinitialisé. Vous pouvez vous connecter.')
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [location.state, location.pathname, navigate])
 
   const roleHome = {
     admin: '/admin',
@@ -103,20 +113,50 @@ export default function Login() {
 
               {/* Password Field */}
               <div className="space-y-2 group">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1">Code d'accès</label>
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40">Code d'accès</label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-[9px] font-black uppercase tracking-widest text-primary/70 hover:text-primary transition-colors"
+                  >
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-primary opacity-30 group-focus-within:opacity-100 transition-opacity" size={16} />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={form.password}
                     onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-14 pr-6 py-4 text-sm text-white placeholder:text-[#816A9E]/30 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:bg-white/[0.06] transition-all"
+                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-14 pr-14 py-4 text-sm text-white placeholder:text-[#816A9E]/30 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:bg-white/[0.06] transition-all"
                     placeholder="••••••••"
+                    autoComplete="current-password"
                   />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl text-[#B5A1C2]/40 hover:text-white hover:bg-white/5 transition-colors"
+                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
             </div>
+
+            <AnimatePresence>
+              {info && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3 text-xs font-bold text-emerald-400"
+                >
+                  {info}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <AnimatePresence>
               {error && (

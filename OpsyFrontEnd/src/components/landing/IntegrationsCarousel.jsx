@@ -265,7 +265,7 @@ export default function IntegrationsCarousel() {
   }, [])
 
   return (
-    <div className="relative overflow-hidden bg-transparent" style={{ height: '500px' }}>
+    <section id="integrations" className="relative overflow-hidden bg-transparent scroll-mt-28" style={{ height: '500px' }}>
       {/* Seamless Vertical Fades */}
       <div className="absolute inset-x-0 top-0 h-64 w-full bg-gradient-to-t from-[#2B1042] via-[#2B1042] via-[20%] to-transparent z-[100] pointer-events-none rotate-180" />
       <div className="absolute inset-x-0 bottom-0 h-48 w-full bg-gradient-to-t from-[#2B1042] via-[#2B1042] to-transparent z-50 pointer-events-none" />
@@ -296,6 +296,6 @@ export default function IntegrationsCarousel() {
           </div>
         </div>
       )}
-    </div>
+    </section>
   )
 }

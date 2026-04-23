@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -21,6 +21,7 @@ import {
   Cpu,
   Gavel,
   LineChart,
+  Mail,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
@@ -82,22 +83,25 @@ function StatChip({ label, value, tone = 'default' }) {
   )
 }
 
-function SectionShell({ children, delay = 0 }) {
+function SectionShell({ children, delay = 0, overflow = 'hidden' }) {
+  const overflowClass = overflow === 'visible' ? 'overflow-visible' : 'overflow-hidden'
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="bg-[#150522]/55 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden"
+      className={`bg-[#150522]/55 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative ${overflowClass}`}
     >
       <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-primary/5 blur-[80px] pointer-events-none" />
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 min-w-0">{children}</div>
     </motion.div>
   )
 }
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const role = user?.role || 'requester'
   const accent = ROLE_ACCENT[role] || ROLE_ACCENT.requester
   const isForcedPwdChange = user?.force_password_change === true
@@ -110,6 +114,10 @@ export default function ProfilePage() {
   const [pwdLoading, setPwdLoading] = useState(false)
   const [pwdError, setPwdError] = useState('')
   const [pwdSuccess, setPwdSuccess] = useState('')
+
+  const [gmailConnecting, setGmailConnecting] = useState(false)
+  const [gmailMsg, setGmailMsg] = useState('')
+  const [gmailErr, setGmailErr] = useState('')
 
   const [hubLoading, setHubLoading] = useState(true)
   const [changeRequests, setChangeRequests] = useState([])
@@ -141,6 +149,46 @@ export default function ProfilePage() {
   useEffect(() => {
     refreshUser()
   }, [refreshUser])
+
+  useEffect(() => {
+    const ok = searchParams.get('google_success') === '1'
+    const errCode = searchParams.get('google_error')
+    if (!ok && !errCode) return
+
+    let cancelled = false
+    ;(async () => {
+      if (ok) {
+        setGmailMsg('Gmail connecté. Les notifications de la plateforme seront aussi envoyées sur cette adresse.')
+      }
+      if (errCode) {
+        const decoded = decodeURIComponent(errCode)
+        const labels = {
+          invalid_state: 'Session OAuth invalide ou expirée.',
+          missing_config: 'OAuth Google non configuré côté serveur.',
+          token_exchange_failed: 'Échange du jeton Google refusé.',
+          userinfo_failed: 'Impossible de lire le profil Google.',
+          missing_profile: 'Profil Google incomplet.',
+          user_not_found: 'Utilisateur introuvable.',
+          google_already_linked: 'Ce compte Google est déjà lié à un autre utilisateur.',
+        }
+        setGmailErr(labels[decoded] || 'Connexion Gmail refusée.')
+      }
+      await refreshUser?.()
+      const r = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('user') || '{}').role || 'requester'
+        } catch {
+          return 'requester'
+        }
+      })()
+      if (!cancelled) {
+        navigate(`/${r}/profile`, { replace: true })
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [searchParams, navigate, refreshUser])
 
   useEffect(() => {
     let cancelled = false
@@ -217,6 +265,43 @@ export default function ProfilePage() {
       setPwdError(errMsg)
     } finally {
       setPwdLoading(false)
+    }
+  }
+
+  const handleGmailConnect = async () => {
+    setGmailErr('')
+    setGmailMsg('')
+    setGmailConnecting(true)
+    try {
+      const res = await api.post('/google/link/start')
+      const url = res.data?.authorize_url
+      if (!url || typeof url !== 'string') {
+        setGmailErr('Réponse serveur invalide. Vérifiez GOOGLE_CLIENT_ID et GOOGLE_REDIRECT_URI sur le serveur.')
+        return
+      }
+      window.location.assign(url)
+    } catch (e) {
+      const msg =
+        e.response?.data?.message ||
+        (e.message === 'Network Error' ? 'Serveur injoignable.' : 'Impossible de démarrer la connexion Google.')
+      setGmailErr(typeof msg === 'string' ? msg : 'Impossible de démarrer la connexion Google.')
+    } finally {
+      setGmailConnecting(false)
+    }
+  }
+
+  const handleGmailDisconnect = async () => {
+    setGmailErr('')
+    setGmailMsg('')
+    setGmailConnecting(true)
+    try {
+      await api.post('/google/disconnect')
+      await refreshUser()
+      setGmailMsg('Gmail déconnecté. Seules les notifications dans la plateforme continuent.')
+    } catch (e) {
+      setGmailErr(e.response?.data?.message || 'Déconnexion impossible.')
+    } finally {
+      setGmailConnecting(false)
     }
   }
 
@@ -514,6 +599,67 @@ export default function ProfilePage() {
               </div>
             </div>
           </motion.div>
+
+          <SectionShell delay={0.05} overflow="visible">
+            {user?.outbound_email_ready !== true && (
+              <div className="mb-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[11px] font-medium text-amber-100/95 leading-relaxed">
+                <p className="font-black uppercase tracking-widest text-[9px] text-amber-200/90 mb-2">Envoi e-mail désactivé (configuration serveur)</p>
+                <p>
+                  Lier Gmail enregistre seulement l&apos;adresse de destination. Pour que les messages arrivent dans Gmail, le backend doit utiliser un transport réel (
+                  <span className="font-semibold text-white">MAIL_MAILER=smtp</span> ou équivalent), pas la valeur par défaut{' '}
+                  <span className="font-mono text-amber-200/80">log</span> (qui écrit dans les logs Laravel uniquement). Configurez SMTP sur le serveur (ex. Gmail App
+                  Password ou Mailtrap), puis redémarrez PHP.
+                </p>
+              </div>
+            )}
+            <div className="flex items-start gap-3 mb-5 min-w-0">
+              <div className="shrink-0 rounded-xl bg-white/[0.04] border border-white/10 p-2.5 mt-0.5">
+                <Mail size={16} className="text-primary/90" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.35em] text-primary">Notifications Gmail</p>
+                <p className="text-[10px] text-[#B5A1C2]/45 mt-2 leading-relaxed">
+                  Liez votre compte Google : chaque notification ChangeHub (demandes, statuts, etc.) sera aussi envoyée sur cette adresse Gmail. Le rapport post-changement est envoyé de la même façon après enregistrement par l&apos;implémenteur. L&apos;envoi réel dépend du SMTP configuré sur le serveur.
+                </p>
+              </div>
+            </div>
+            {gmailMsg && (
+              <div className="mb-4 text-[11px] font-bold text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 break-words">
+                {gmailMsg}
+              </div>
+            )}
+            {gmailErr && (
+              <div className="mb-4 text-[11px] font-bold text-rose-300/90 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 break-words">
+                {gmailErr}
+              </div>
+            )}
+            {user?.google_email ? (
+              <div className="flex flex-col gap-4 min-w-0">
+                <p className="text-xs text-white/90 break-words">
+                  Compte lié :{' '}
+                  <span className="font-semibold text-primary">{user.google_email}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={handleGmailDisconnect}
+                  disabled={gmailConnecting}
+                  className="w-full sm:w-auto sm:self-end px-6 py-3.5 rounded-2xl border border-white/15 text-[10px] font-black uppercase tracking-widest text-[#D5CBE5] bg-white/[0.04] hover:bg-white/[0.08] transition-colors disabled:opacity-50"
+                >
+                  {gmailConnecting ? 'Déconnexion…' : 'Déconnecter Gmail'}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleGmailConnect}
+                disabled={gmailConnecting}
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-primary text-[#0F051E] text-[10px] font-black uppercase tracking-widest hover:opacity-95 disabled:opacity-50 disabled:pointer-events-none transition-opacity"
+              >
+                <Mail size={14} aria-hidden />
+                {gmailConnecting ? 'Redirection…' : 'Connecter Gmail'}
+              </button>
+            )}
+          </SectionShell>
 
           {notifications.length > 0 && (
             <SectionShell delay={0.08}>

@@ -42,4 +42,14 @@ return [
         'frontend_redirect' => env('GITHUB_FRONTEND_REDIRECT', 'http://localhost:5173/implementer/github'),
     ],
 
+    /** SPA base URL (no trailing slash) — used in notification emails and OAuth return. */
+    'frontend_url' => rtrim((string) env('FRONTEND_URL', 'http://localhost:5173'), '/'),
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+        'frontend_redirect' => env('GOOGLE_FRONTEND_REDIRECT', rtrim((string) env('FRONTEND_URL', 'http://localhost:5173'), '/') . '/oauth/google'),
+    ],
+
 ];

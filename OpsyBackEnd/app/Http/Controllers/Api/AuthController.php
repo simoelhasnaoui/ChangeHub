@@ -2,12 +2,27 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\ResetPasswordMail;
 use App\Models\User;
+use App\Support\OutboundMail;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller {
+
+    /** User JSON + flag so the UI can warn when SMTP is not configured. */
+    private function userWithMailMeta(User $user): array
+    {
+        return array_merge($user->toArray(), [
+            'outbound_email_ready' => OutboundMail::isReady(),
+        ]);
+    }
 
     public function login(Request $request) {
         $request->validate([
@@ -30,8 +45,84 @@ class AuthController extends Controller {
 
         return response()->json([
             'token' => $token,
-            'user'  => $user->fresh()->toArray(),
+            'user'  => $this->userWithMailMeta($user->fresh()),
         ]);
+    }
+
+    /** Demande de lien de réinitialisation (e-mail avec jeton). */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $generic = 'Si un compte existe pour cette adresse, un lien de réinitialisation vient d’y être envoyé.';
+
+        $user = User::where('email', $request->email)->first();
+        if (! $user) {
+            return response()->json(['message' => $generic]);
+        }
+
+        $plain = Str::random(64);
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $user->email],
+            ['token' => hash('sha256', $plain), 'created_at' => now()]
+        );
+
+        $base = rtrim((string) config('services.frontend_url', ''), '/');
+        $resetUrl = $base.'/reset-password?'.http_build_query([
+            'token' => $plain,
+            'email' => $user->email,
+        ]);
+
+        try {
+            Mail::to($user->email)->send(new ResetPasswordMail($user->name, $resetUrl, 60));
+        } catch (\Throwable $e) {
+            Log::warning('ResetPasswordMail: '.$e->getMessage());
+        }
+
+        return response()->json(['message' => $generic]);
+    }
+
+    /** Définit un nouveau mot de passe à partir du lien reçu par e-mail. */
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => ['required', 'min:8', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'confirmed'],
+        ], [
+            'password.regex' => 'Le mot de passe doit contenir au moins une majuscule et un chiffre.',
+        ]);
+
+        $row = DB::table('password_reset_tokens')->where('email', $request->email)->first();
+        if (! $row || ! hash_equals($row->token, hash('sha256', $request->token))) {
+            throw ValidationException::withMessages([
+                'email' => ['Ce lien est invalide ou a déjà été utilisé.'],
+            ]);
+        }
+
+        if (Carbon::parse($row->created_at)->addMinutes(60)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            throw ValidationException::withMessages([
+                'email' => ['Ce lien a expiré. Demandez un nouveau lien.'],
+            ]);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        if (! $user) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            throw ValidationException::withMessages([
+                'email' => ['Compte introuvable.'],
+            ]);
+        }
+
+        $user->password = $request->password;
+        $user->force_password_change = false;
+        $user->save();
+
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+        $user->tokens()->delete();
+
+        return response()->json(['message' => 'Mot de passe mis à jour. Vous pouvez vous connecter.']);
     }
 
     public function logout(Request $request) {
@@ -64,6 +155,6 @@ class AuthController extends Controller {
     }
 
     public function me(Request $request) {
-        return response()->json($request->user());
+        return response()->json($this->userWithMailMeta($request->user()->fresh()));
     }
 }

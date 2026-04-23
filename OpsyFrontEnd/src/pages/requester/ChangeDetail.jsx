@@ -6,7 +6,7 @@ import {
     ArrowLeft, FileText, Activity, ShieldAlert, 
     History, CheckCircle2, AlertCircle, XCircle,
     Edit3, Trash2, Send, Server, Calendar, 
-    User, ChevronRight, MessageSquare, Info, Layers
+    User, ChevronRight, MessageSquare, Info, Layers, Download
 } from 'lucide-react'
 import ConfirmModal from '../../components/ConfirmModal'
 
@@ -56,6 +56,7 @@ export default function ChangeDetail() {
     const [showAppealForm, setShowAppealForm] = useState(false)
     const [appealComment, setAppealComment] = useState('')
     const [appealing, setAppealing] = useState(false)
+    const [pdfDownloading, setPdfDownloading] = useState(false)
 
     const load = async () => {
         setError(null)
@@ -71,6 +72,26 @@ export default function ChangeDetail() {
     }
 
     useEffect(() => { load() }, [id])
+
+    const handleDownloadAnalysisPdf = async () => {
+        setPdfDownloading(true)
+        try {
+            const r = await api.get(`/change-requests/${id}/analysis/pdf`, { responseType: 'blob' })
+            const blob = new Blob([r.data], { type: 'application/pdf' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `rapport-intervention-${id}.pdf`
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            URL.revokeObjectURL(url)
+        } catch (err) {
+            alert(err.response?.data?.message || 'Impossible de télécharger le rapport PDF.')
+        } finally {
+            setPdfDownloading(false)
+        }
+    }
 
     const handleSubmit = async () => {
         setSubmitting(true)
@@ -284,28 +305,46 @@ export default function ChangeDetail() {
                         </div>
                     </div>
 
-                    {/* Report Module (Implementation Analysis) */}
+                    {/* Rapport post-changement (synthèse enregistrée par l'implémenteur) */}
                     {cr.analysis && (
                         <div className="bg-[#150522]/40 backdrop-blur-3xl border border-white/5 p-10 xl:p-14 rounded-[3.5rem] shadow-2xl space-y-10 border-l-4 border-l-emerald-500/30">
-                            <div className="flex justify-between items-center">
+                            <div className="flex flex-wrap justify-between items-center gap-4">
                                 <h3 className="text-xs font-black uppercase tracking-[0.4em] text-[#B5A1C2]/40 flex items-center gap-3 text-emerald-400">
-                                    <CheckCircle2 size={16} /> Rapport d'exécution
+                                    <CheckCircle2 size={16} /> Rapport post-changement
                                 </h3>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400/40 bg-emerald-400/5 px-3 py-1 rounded-full border border-emerald-400/10">LIVRÉ</span>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400/40 bg-emerald-400/5 px-3 py-1 rounded-full border border-emerald-400/10">LIVRÉ</span>
+                                    <button
+                                        type="button"
+                                        onClick={handleDownloadAnalysisPdf}
+                                        disabled={pdfDownloading}
+                                        className="inline-flex items-center gap-2 rounded-2xl border border-primary/40 bg-primary/15 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-primary/25 disabled:opacity-50"
+                                    >
+                                        <Download size={14} />
+                                        {pdfDownloading ? 'Téléchargement…' : 'Télécharger PDF'}
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                <div className="space-y-4">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/20">Analyse d'Impact</p>
-                                    <p className="text-sm text-[#E8E0F0] leading-relaxed whitespace-pre-wrap">{cr.analysis.impact_analysis}</p>
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-5">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${cr.analysis.incident_occurred ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'}`}>
+                                        {cr.analysis.incident_occurred ? 'Incident constaté' : 'Aucun incident'}
+                                    </span>
                                 </div>
-                                <div className="space-y-4">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/20">Résumé de l'Opération</p>
-                                    <p className="text-sm text-[#E8E0F0] leading-relaxed whitespace-pre-wrap">{cr.analysis.execution_summary}</p>
-                                </div>
-                                <div className="col-span-full pt-8 border-t border-white/5 space-y-4">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/20">Validation du Rollback</p>
-                                    <p className="text-sm text-emerald-400/80 leading-relaxed italic">{cr.analysis.rollback_tests || 'Tests de retour arrière validés sans exception.'}</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/30">Constat</p>
+                                        <p className="text-sm text-[#E8E0F0] leading-relaxed whitespace-pre-wrap">{cr.analysis.description || '—'}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/30">Impact</p>
+                                        <p className="text-sm text-[#E8E0F0] leading-relaxed whitespace-pre-wrap">{cr.analysis.impact || '—'}</p>
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2 pt-2 border-t border-white/5">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/30">Mesures / solution</p>
+                                        <p className="text-sm text-emerald-200/90 leading-relaxed whitespace-pre-wrap">{cr.analysis.solution || '—'}</p>
+                                    </div>
                                 </div>
                             </div>
 

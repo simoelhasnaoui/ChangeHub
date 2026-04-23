@@ -37,6 +37,7 @@ export default function ImplementerGitHub() {
   const [activityLoading, setActivityLoading] = useState(false)
   const [activityPage, setActivityPage] = useState(1)
   const [activityMeta, setActivityMeta] = useState(null)
+  const [connecting, setConnecting] = useState(false)
 
   useLayoutEffect(() => {
     if (isArchives) setActivityLoading(true)
@@ -126,13 +127,26 @@ export default function ImplementerGitHub() {
 
   const handleConnect = async () => {
     setError('')
-    const res = await api.post('/github/link/start')
-    const url = res.data?.authorize_url
-    if (!url) {
-      setError('URL de connexion GitHub indisponible.')
-      return
+    setConnecting(true)
+    try {
+      const res = await api.post('/github/link/start')
+      const url = res.data?.authorize_url
+      if (!url || typeof url !== 'string') {
+        setError('URL de connexion GitHub indisponible. Vérifiez la configuration serveur (GITHUB_CLIENT_ID, GITHUB_REDIRECT_URI).')
+        return
+      }
+      window.location.assign(url)
+    } catch (e) {
+      const msg =
+        e.response?.data?.message ||
+        e.response?.data?.error ||
+        (e.message === 'Network Error'
+          ? 'Impossible de joindre le serveur. Vérifiez que l’API est démarrée et accessible.'
+          : 'Impossible de démarrer la connexion GitHub.')
+      setError(typeof msg === 'string' ? msg : 'Impossible de démarrer la connexion GitHub.')
+    } finally {
+      setConnecting(false)
     }
-    window.location.href = url
   }
 
   const handleDisconnect = async () => {
@@ -275,11 +289,13 @@ export default function ImplementerGitHub() {
         <div className="flex gap-3">
           {!status.connected ? (
             <button
-              onClick={handleConnect}
-              className="group flex items-center gap-3 bg-primary text-[#0F051E] font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-primary/20"
+              type="button"
+              onClick={() => handleConnect()}
+              disabled={connecting}
+              className="group flex items-center gap-3 bg-primary text-[#0F051E] font-black uppercase tracking-widest text-[11px] px-8 py-4 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100"
             >
-              <Link2 size={16} />
-              Connecter GitHub
+              <Link2 size={16} className={connecting ? 'animate-pulse' : ''} />
+              {connecting ? 'Connexion…' : 'Connecter GitHub'}
             </button>
           ) : (
             <>
@@ -368,11 +384,13 @@ export default function ImplementerGitHub() {
                 <GitHubMark size={32} className="mx-auto text-[#B5A1C2]/10" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/30">Aucun compte GitHub lié</p>
                 <button
-                  onClick={handleConnect}
-                  className="inline-flex items-center gap-2 mt-2 px-6 py-3 rounded-2xl bg-primary text-[#0F051E] text-[10px] font-black uppercase tracking-widest"
+                  type="button"
+                  onClick={() => handleConnect()}
+                  disabled={connecting}
+                  className="inline-flex items-center gap-2 mt-2 px-6 py-3 rounded-2xl bg-primary text-[#0F051E] text-[10px] font-black uppercase tracking-widest hover:opacity-95 disabled:opacity-50 disabled:pointer-events-none transition-opacity"
                 >
-                  <Link2 size={14} />
-                  Connecter
+                  <Link2 size={14} className={connecting ? 'animate-pulse' : ''} />
+                  {connecting ? 'Connexion…' : 'Connecter'}
                 </button>
               </div>
             ) : reposLoading ? (

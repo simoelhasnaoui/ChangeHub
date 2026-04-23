@@ -10,10 +10,14 @@ use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\GitHubController;
 use App\Http\Controllers\Api\RepoLinkController;
+use App\Http\Controllers\Api\GoogleAuthController;
 
 // Public
-Route::post('/login',  [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::get('/github/link/callback', [GitHubController::class, 'callback']);
+Route::get('/google/link/callback', [GoogleAuthController::class, 'callback']);
 
 // Protected
 Route::middleware('auth:sanctum')->group(function () {
@@ -23,6 +27,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    // Google (Gmail — notification copy for all authenticated roles)
+    Route::post('/google/link/start', [GoogleAuthController::class, 'startLink']);
+    Route::post('/google/disconnect', [GoogleAuthController::class, 'disconnect']);
 
     // GitHub (Implementer)
     Route::get('/github/status', [GitHubController::class, 'status']);
@@ -64,6 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Post-change analysis
     Route::post('/change-requests/{changeRequest}/analysis', [ChangeRequestController::class, 'storeAnalysis']);
+    Route::get('/change-requests/{changeRequest}/analysis/pdf', [ChangeRequestController::class, 'downloadAnalysisPdf']);
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);

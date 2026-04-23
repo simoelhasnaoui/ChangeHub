@@ -8,7 +8,12 @@ use App\Notifications\ChangeRequestNotification;
 use App\Models\ChangeRequest;
 use App\Models\ChangeHistory;
 use App\Models\PostChangeAnalysis;
+use App\Mail\ChangeRequestAnalysisReportMail;
+use App\Support\InterventionReportPdfExporter;
+use App\Support\OutboundMail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 
 class ChangeRequestController extends Controller {
@@ -345,7 +350,78 @@ class ChangeRequestController extends Controller {
             }
         }
 
+        $changeRequest->load(['changeType', 'requester', 'implementers', 'incidents']);
+        $this->sendAnalysisReportEmails($changeRequest, $analysisRecord);
+
         return response()->json($analysisRecord->load('changeRequest.incidents'), 201);
+    }
+
+    /** PDF du rapport post-changement (demandeur, implémenteur, approbateur avec droit `view`). */
+    public function downloadAnalysisPdf(Request $request, ChangeRequest $changeRequest)
+    {
+        $this->authorize('view', $changeRequest);
+
+        $analysis = $changeRequest->analysis;
+        if (! $analysis) {
+            abort(404, 'Aucun rapport post-changement disponible.');
+        }
+
+        $binary = InterventionReportPdfExporter::binary($changeRequest, $analysis);
+
+        $filename = 'rapport-intervention-'.$changeRequest->id.'.pdf';
+
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    /** Email HTML report to Gmail-linked requester and implementers (PDF du rapport pour le demandeur uniquement). */
+    private function sendAnalysisReportEmails(ChangeRequest $cr, PostChangeAnalysis $analysis): void
+    {
+        if (! OutboundMail::isReady()) {
+            return;
+        }
+
+        $users = collect([$cr->requester])->merge($cr->implementers ?? [])->filter()->unique('id');
+        $base = rtrim((string) config('services.frontend_url', ''), '/');
+
+        foreach ($users as $user) {
+            if (empty($user->google_email)) {
+                continue;
+            }
+            $path = $this->frontendChangePathForUser($user, $cr);
+            $openUrl = $base !== '' ? $base.$path : null;
+            try {
+                Mail::to($user->google_email)->send(new ChangeRequestAnalysisReportMail(
+                    $cr,
+                    $analysis,
+                    $openUrl,
+                    attachPostChangePdf: $user->isRequester(),
+                ));
+            } catch (\Throwable $e) {
+                Log::warning('ChangeRequestAnalysisReportMail failed: '.$e->getMessage());
+            }
+        }
+    }
+
+    private function frontendChangePathForUser(User $user, ChangeRequest $cr): string
+    {
+        $id = $cr->id;
+        if ($user->isRequester()) {
+            return '/requester/changes/'.$id;
+        }
+        if ($user->isImplementer()) {
+            return '/implementer/changes/'.$id;
+        }
+        if ($user->isApprover()) {
+            return '/approver/changes/'.$id;
+        }
+        if ($user->isAdmin()) {
+            return '/admin/changes/'.$id;
+        }
+
+        return '/login';
     }
 
     // Helpers

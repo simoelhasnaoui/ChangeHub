@@ -4,6 +4,8 @@ import { SearchProvider } from './context/SearchContext'
 import PrivateRoute from './components/PrivateRoute'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Landing from './pages/Landing'
 
 import RequesterDashboard from './pages/requester/Dashboard'
@@ -22,6 +24,7 @@ import Users from './pages/admin/Users'
 import AdminChangeDetail from './pages/admin/ChangeDetail'
 
 import ProfilePage from './pages/shared/ProfilePage'
+import GoogleOAuthFinish from './pages/GoogleOAuthFinish'
 
 const wrap = (roles, children) => (
   <PrivateRoute roles={roles}>
@@ -38,6 +41,9 @@ export default function App() {
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/oauth/google" element={<GoogleOAuthFinish />} />
             <Route path="/unauthorized" element={<div className="p-8 text-red-500 text-sm">Accès non autorisé.</div>} />
 
             {/* Requester */}

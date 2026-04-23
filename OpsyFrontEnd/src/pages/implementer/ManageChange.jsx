@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
     ArrowLeft, Activity, CheckCircle2, AlertCircle, 
     FileText, ShieldCheck, Server, Layers, Calendar, 
-    User, ChevronRight, Save, Download, Plus, Trash2,
+    User, ChevronRight, Save, Download, Plus, Minus, Trash2,
     Info, AlertTriangle, Clock, Terminal, Globe, Cpu
 } from 'lucide-react'
 import ChangeHubSelect from '../../components/ui/ChangeHubSelect'
@@ -80,6 +80,18 @@ export default function ManageChange() {
         } finally {
             setSavingAnalysis(false)
         }
+    }
+
+    const bumpIncidentTtr = (index, delta) => {
+        setAnalysis((prev) => {
+            const next = [...prev.incidents]
+            const cur = Number(next[index]?.time_to_resolve_minutes ?? 0)
+            next[index] = {
+                ...next[index],
+                time_to_resolve_minutes: Math.max(0, cur + delta),
+            }
+            return { ...prev, incidents: next }
+        })
     }
 
     if (loading) {
@@ -363,12 +375,42 @@ export default function ManageChange() {
                                                         </div>
                                                         <div className="space-y-2">
                                                             <label className="text-[9px] font-black uppercase tracking-widest text-[#B5A1C2]/20 ml-1">TTR (Temps de résolution min)</label>
-                                                            <input required type="number" min="0" value={inc.time_to_resolve_minutes || 0}
-                                                                onChange={e => {
-                                                                    const newInc = [...analysis.incidents]; newInc[i].time_to_resolve_minutes = parseInt(e.target.value) || 0; setAnalysis(a => ({ ...a, incidents: newInc }));
-                                                                }}
-                                                                className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-xs text-white focus:ring-1 focus:ring-primary/50 transition-all"
-                                                            />
+                                                            <div className="flex rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden focus-within:ring-1 focus-within:ring-primary/40">
+                                                                <button
+                                                                    type="button"
+                                                                    tabIndex={-1}
+                                                                    onClick={() => bumpIncidentTtr(i, -5)}
+                                                                    className="shrink-0 px-3 py-3 text-primary/90 hover:bg-white/10 border-r border-white/10 transition-colors disabled:opacity-40"
+                                                                    aria-label="Diminuer le TTR"
+                                                                >
+                                                                    <Minus size={16} strokeWidth={2.5} />
+                                                                </button>
+                                                                <input
+                                                                    required
+                                                                    type="text"
+                                                                    inputMode="numeric"
+                                                                    pattern="[0-9]*"
+                                                                    autoComplete="off"
+                                                                    value={String(inc.time_to_resolve_minutes ?? 0)}
+                                                                    onChange={(e) => {
+                                                                        const raw = e.target.value.replace(/\D/g, '')
+                                                                        const v = raw === '' ? 0 : Math.min(999999, parseInt(raw, 10))
+                                                                        const newInc = [...analysis.incidents]
+                                                                        newInc[i] = { ...newInc[i], time_to_resolve_minutes: v }
+                                                                        setAnalysis((a) => ({ ...a, incidents: newInc }))
+                                                                    }}
+                                                                    className="min-w-0 flex-1 border-0 bg-transparent py-3 text-center text-xs font-bold text-white focus:ring-0 focus:outline-none"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    tabIndex={-1}
+                                                                    onClick={() => bumpIncidentTtr(i, 5)}
+                                                                    className="shrink-0 px-3 py-3 text-primary/90 hover:bg-white/10 border-l border-white/10 transition-colors"
+                                                                    aria-label="Augmenter le TTR"
+                                                                >
+                                                                    <Plus size={16} strokeWidth={2.5} />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>

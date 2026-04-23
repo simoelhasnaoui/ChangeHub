@@ -3,8 +3,11 @@ import Navbar from '../components/landing/Navbar';
 import Hero from '../components/landing/Hero';
 import IntegrationsCarousel from '../components/landing/IntegrationsCarousel';
 import Features from '../components/landing/Features';
+import LandingMettle from '../components/landing/LandingMettle';
+import LandingBlueprint from '../components/landing/LandingBlueprint';
 import HowItWorks from '../components/landing/HowItWorks';
 import UseCases from '../components/landing/UseCases';
+import LandingFAQ from '../components/landing/LandingFAQ';
 import Footer from '../components/landing/Footer';
 import ScrollToTop from '../components/landing/ScrollToTop';
 
@@ -14,9 +17,12 @@ export default function Landing() {
       <Navbar />
       <Hero />
       <Features />
+      <LandingMettle />
       <IntegrationsCarousel />
+      <LandingBlueprint />
       <HowItWorks />
       <UseCases />
+      <LandingFAQ />
       <Footer />
       <ScrollToTop />
     </div>
