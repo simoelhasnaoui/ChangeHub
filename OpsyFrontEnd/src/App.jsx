@@ -15,6 +15,7 @@ import ReviewChange from './pages/approver/ReviewChange'
 
 import ImplementerDashboard from './pages/implementer/Dashboard'
 import ManageChange from './pages/implementer/ManageChange'
+import ImplementerGitHub from './pages/implementer/GitHub'
 
 import AdminDashboard from './pages/admin/Dashboard'
 import Users from './pages/admin/Users'
@@ -51,8 +52,9 @@ export default function App() {
 
             {/* Implementer */}
             <Route path="/implementer" element={wrap(['implementer'], <ImplementerDashboard />)} />
-            <Route path="/implementer/changes" element={wrap(['implementer'], <ImplementerDashboard />)} />
+            <Route path="/implementer/changes" element={wrap(['implementer'], <ImplementerGitHub />)} />
             <Route path="/implementer/changes/:id" element={wrap(['implementer'], <ManageChange />)} />
+            <Route path="/implementer/github" element={wrap(['implementer'], <ImplementerGitHub />)} />
 
             {/* Admin */}
             <Route path="/admin" element={wrap(['admin'], <AdminDashboard />)} />

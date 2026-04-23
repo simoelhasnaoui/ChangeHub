@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+﻿import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate, NavLink, useLocation } from 'react-router-dom'
@@ -393,7 +393,7 @@ export default function Layout({ children }) {
           />
 
           {/* Expansion Shelves (Nav + System) */}
-          {[...links, { label: 'Alertes' }, { label: 'Sécurité' }, { label: 'Sortie' }].map((_, i) => (
+          {[...links, { label: 'Notifications' }, { label: 'Sécurité' }, { label: 'Sortie' }].map((_, i) => (
             <div
               key={i}
               className={`absolute h-12 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${currentSide === 'left' ? 'left-1 origin-left' : 'right-1 origin-right'
@@ -445,8 +445,8 @@ export default function Layout({ children }) {
                 >
                   {/* Outer container — absolute pinning to edge */}
                   <div className={`absolute h-12 transition-all duration-500 flex items-center ${currentSide === 'left'
-                      ? `left-0 flex-row ${isHovered ? 'w-[210px]' : 'w-full'}`
-                      : `right-0 flex-row-reverse ${isHovered ? 'w-[210px]' : 'w-full'}`
+                    ? `left-0 flex-row ${isHovered ? 'w-[210px]' : 'w-full'}`
+                    : `right-0 flex-row-reverse ${isHovered ? 'w-[210px]' : 'w-full'}`
                     }`}>
 
                     {/* Icon Container (Fixed position in mass) */}
@@ -484,7 +484,7 @@ export default function Layout({ children }) {
           {/* System Actions Area */}
           <div className="flex flex-col items-center gap-4 mb-2 w-full relative">
             {[
-              { id: 'notif', label: 'Alertes', icon: <NotificationCenter side={currentSide} onToggle={setIsNotifOpen} />, component: true },
+              { id: 'notif', label: 'Notifications', icon: <NotificationCenter side={currentSide} onToggle={setIsNotifOpen} />, component: true },
               { id: 'pwd', label: 'Sécurité', icon: icons.password, onClick: () => setShowPwdModal(true) },
               { id: 'logout', label: 'Sortie', icon: icons.logout, onClick: handleLogout, danger: true }
             ].map((item, i) => {
@@ -500,8 +500,8 @@ export default function Layout({ children }) {
                   onClick={item.onClick}
                 >
                   <div className={`absolute h-12 transition-all duration-500 flex items-center ${currentSide === 'left'
-                      ? `left-0 flex-row ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'w-[210px]' : 'w-full'}`
-                      : `right-0 flex-row-reverse ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'w-[210px]' : 'w-full'}`
+                    ? `left-0 flex-row ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'w-[210px]' : 'w-full'}`
+                    : `right-0 flex-row-reverse ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'w-[210px]' : 'w-full'}`
                     }`}>
 
                     {/* Icon */}

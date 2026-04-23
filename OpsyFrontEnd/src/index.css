@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
   --ChangeHub-body: #2B1042;
@@ -21,16 +21,16 @@
   --glass-bg: var(--ChangeHub-glass);
   --glass-border: var(--ChangeHub-border);
   --shadow-card: var(--ChangeHub-shadow);
-  
+
   --color-primary-hover: #B5A1C2;
   --color-primary-light: rgba(213, 203, 229, 0.1);
   --color-surface: rgba(62, 30, 112, 0.4);
   --color-text-dim: rgba(213, 203, 229, 0.9);
   --font-inter: "Inter", sans-serif;
   --color-border: rgba(213, 203, 229, 0.3);
-  
-  --shadow-card-hover: 0 20px 60px rgba(0, 0, 0, 0.8), 0 5px 15px rgba(255,255,255,0.05);
-  --glass-reflection: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 100%);
+
+  --shadow-card-hover: 0 20px 60px rgba(0, 0, 0, 0.8), 0 5px 15px rgba(255, 255, 255, 0.05);
+  --glass-reflection: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 100%);
 }
 
 @utility glass-card {
@@ -64,8 +64,13 @@
 }
 
 @keyframes neon-border-pulse {
-  from { border-color: rgba(92, 45, 143, 0.3); }
-  to { border-color: rgba(213, 203, 229, 0.6); }
+  from {
+    border-color: rgba(92, 45, 143, 0.3);
+  }
+
+  to {
+    border-color: rgba(213, 203, 229, 0.6);
+  }
 }
 
 html {
@@ -86,14 +91,17 @@ body {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(129, 106, 158, 0.3);
   border-radius: 10px;
   transition: background 0.3s;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(181, 161, 194, 0.6);
 }

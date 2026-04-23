@@ -12,10 +12,16 @@ class User extends Authenticatable {
     protected $fillable = [
         'name', 'email', 'password', 'role',
         'force_password_change', 'department', 'job_title',
-        'phone', 'employee_id', 'status', 'avatar_path'
+        'phone', 'employee_id', 'status', 'avatar_path',
+        'github_id', 'github_login', 'github_token', 'github_connected_at'
     ];
     protected $hidden   = ['password', 'remember_token'];
-    protected $casts    = ['password' => 'hashed', 'force_password_change' => 'boolean'];
+    protected $casts    = [
+        'password' => 'hashed',
+        'force_password_change' => 'boolean',
+        'github_connected_at' => 'datetime',
+        'github_token' => 'encrypted',
+    ];
 
     public function changeRequestsAsRequester() {
         return $this->hasMany(ChangeRequest::class, 'requester_id');

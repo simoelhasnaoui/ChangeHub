@@ -8,9 +8,11 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\GitHubController;
 
 // Public
 Route::post('/login',  [AuthController::class, 'login']);
+Route::get('/github/link/callback', [GitHubController::class, 'callback']);
 
 // Protected
 Route::middleware('auth:sanctum')->group(function () {
@@ -20,6 +22,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    // GitHub (Implementer)
+    Route::get('/github/status', [GitHubController::class, 'status']);
+    Route::post('/github/link/start', [GitHubController::class, 'startLink']);
+    Route::post('/github/disconnect', [GitHubController::class, 'disconnect']);
+    Route::get('/github/repos', [GitHubController::class, 'repos']);
 
     // Change types (all roles — used in forms)
     Route::get('/change-types', [ChangeTypeController::class, 'index']);
