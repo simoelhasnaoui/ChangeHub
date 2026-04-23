@@ -341,15 +341,20 @@ export default function ChangeDetail() {
                                 <div className="pt-10 border-t border-white/5 space-y-8">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-xs font-black uppercase tracking-widest text-[#E8E0F0]">Action Requise : Évaluation de Livraison</h3>
-                                        {cr.requester_validation_status !== 'pending' && (
+                                        {cr.requester_validation_status === 'validated' && (
                                             <div className={`flex items-center gap-2 text-xs font-bold ${reqValidationConfig[cr.requester_validation_status]?.color}`}>
                                                 <CheckCircle2 size={16} /> {reqValidationConfig[cr.requester_validation_status]?.label}
                                             </div>
                                         )}
                                     </div>
 
-                                    {cr.requester_validation_status === 'pending' && (
+                                    {(cr.requester_validation_status === 'pending' || cr.requester_validation_status === 'rejected') && (
                                         <form onSubmit={handleValidate} className="bg-[#150522]/60 p-8 rounded-[2.5rem] border border-white/10 space-y-6">
+                                            {cr.requester_validation_status === 'rejected' && (
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-amber-400/90 border border-amber-500/20 bg-amber-500/5 rounded-2xl px-4 py-3">
+                                                    Nouvelle livraison : merci de confirmer ou de signaler à nouveau si le correctif est encore insuffisant.
+                                                </p>
+                                            )}
                                             <p className="text-xs text-[#B5A1C2]/60 leading-relaxed italic">
                                                 Confirmez-vous que les fonctionnalités ou correctifs ont été livrés conformément aux spécifications techniques ?
                                             </p>

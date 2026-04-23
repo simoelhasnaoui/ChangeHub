@@ -1,11 +1,11 @@
 ﻿import React, { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Users as UsersIcon, UserPlus, Shield, UserCheck, User,
-    Mail, Briefcase, Hash, Phone, Image as ImageIcon,
+    Mail, Briefcase, Hash, Phone,
     Edit3, Trash2, Key, X, Check, Copy, MoreHorizontal,
     Search, Filter, ChevronRight, AlertCircle, Building2, Activity
 } from 'lucide-react'
@@ -21,6 +21,7 @@ const ROLE_CONFIG = {
 }
 
 export default function Users() {
+    const navigate = useNavigate()
     const [users, setUsers] = useState([])
     const [loading, setLoading] = useState(true)
 
@@ -165,13 +166,9 @@ export default function Users() {
                                         <div className="flex items-center gap-4">
                                             <div className="relative">
                                                 <div className="w-12 h-12 rounded-2xl overflow-hidden border border-white/10 bg-primary/5">
-                                                    {u.avatar_path ? (
-                                                        <img src={`http://127.0.0.1:8000/storage/${u.avatar_path}`} alt="" className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-xs font-black text-primary">
-                                                            {u.name.charAt(0)}
-                                                        </div>
-                                                    )}
+                                                    <div className="w-full h-full flex items-center justify-center text-xs font-black text-primary">
+                                                        {u.name.charAt(0)}
+                                                    </div>
                                                 </div>
                                                 <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-body ${u.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                             </div>

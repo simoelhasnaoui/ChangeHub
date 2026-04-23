@@ -2,25 +2,63 @@ import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-    User, Mail, Briefcase, Hash, Phone, Image as ImageIcon,
-    Edit3, X, Check, Shield, Activity, Building2
+    User, Mail, Briefcase, Hash, Phone,
+    X, Check, Shield, Activity, Building2, Copy,
 } from 'lucide-react'
 import api from '../api/axios'
 import ChangeHubSelect from './ui/ChangeHubSelect'
 
+const USER_DEPARTMENT_OPTIONS = [
+    { value: 'IT', label: 'IT / DSI' },
+    { value: 'DevOps', label: 'DevOps & plateforme' },
+    { value: 'Sécurité', label: 'Sécurité & SOC' },
+    { value: 'Réseau', label: 'Réseau & infrastructure' },
+    { value: 'Applications', label: 'Applications & delivery' },
+    { value: 'Support', label: 'Support utilisateurs' },
+    { value: 'Data', label: 'Data & analytics' },
+    { value: 'Direction', label: 'Direction & pilotage' },
+    { value: 'RH', label: 'RH & administratif' },
+    { value: 'Commercial', label: 'Commercial & marketing' },
+    { value: 'Finance', label: 'Finance & achats' },
+    { value: 'Autre', label: 'Autre service' },
+]
+
+const USER_JOB_TITLE_OPTIONS = [
+    { value: 'Ingénieur DevOps', label: 'Ingénieur DevOps' },
+    { value: 'Ingénieur réseau', label: 'Ingénieur réseau' },
+    { value: 'Ingénieur sécurité', label: 'Ingénieur sécurité' },
+    { value: 'Développeur', label: 'Développeur' },
+    { value: 'Lead développement', label: 'Lead développement' },
+    { value: 'Chef de projet IT', label: 'Chef de projet IT' },
+    { value: 'Product Owner', label: 'Product Owner' },
+    { value: 'Architecte solution', label: 'Architecte solution' },
+    { value: 'Support N2 / N3', label: 'Support N2 / N3' },
+    { value: 'Administrateur systèmes', label: 'Administrateur systèmes' },
+    { value: 'Responsable SOC', label: 'Responsable SOC' },
+    { value: 'Consultant', label: 'Consultant' },
+    { value: 'Stagiaire / alternant', label: 'Stagiaire / alternant' },
+    { value: 'Directeur technique', label: 'Directeur technique' },
+    { value: 'Autre', label: 'Autre poste' },
+]
+
+function optionsWithCurrentValue(options, current) {
+    const s = current != null ? String(current).trim() : ''
+    if (!s) return options
+    if (options.some((o) => String(o.value) === s)) return options
+    return [{ value: s, label: s }, ...options]
+}
 
 export default function UserFormModal({ isOpen, onClose, onSuccess, initialData = null }) {
     const [form, setForm] = useState({
         name: '', email: '', role: 'requester',
         department: '', job_title: '', phone: '', employee_id: '', status: 'active'
     })
-    const [avatarFile, setAvatarFile] = useState(null)
-    const [avatarPreview, setAvatarPreview] = useState(null)
     const [error, setError] = useState('')
     const [saving, setSaving] = useState(false)
     const [generatedPassword, setGeneratedPassword] = useState('')
+    const [copyHint, setCopyHint] = useState('')
 
-    const fileInputRef = useRef()
+    const passwordFieldRef = useRef(null)
 
     useEffect(() => {
         if (isOpen) {
@@ -30,27 +68,47 @@ export default function UserFormModal({ isOpen, onClose, onSuccess, initialData 
                     department: initialData.department || '', job_title: initialData.job_title || '',
                     phone: initialData.phone || '', employee_id: initialData.employee_id || '', status: initialData.status || 'active'
                 })
-                setAvatarFile(null)
-                setAvatarPreview(initialData.avatar_path ? `http://127.0.0.1:8000/storage/${initialData.avatar_path}` : null)
             } else {
                 setForm({ name: '', email: '', role: 'requester', department: '', job_title: '', phone: '', employee_id: '', status: 'active' })
-                setAvatarFile(null)
-                setAvatarPreview(null)
             }
             setError('')
             setGeneratedPassword('')
+            setCopyHint('')
         }
     }, [isOpen, initialData])
 
-    const setField = (k, v) => setForm(f => ({ ...f, [k]: v }))
+    useEffect(() => {
+        if (!generatedPassword) return
+        const id = setTimeout(() => {
+            passwordFieldRef.current?.focus()
+            passwordFieldRef.current?.select()
+        }, 150)
+        return () => clearTimeout(id)
+    }, [generatedPassword])
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0]
-        if (file) {
-            setAvatarFile(file)
-            setAvatarPreview(URL.createObjectURL(file))
+    const copyGeneratedPassword = async () => {
+        const pwd = generatedPassword
+        if (!pwd) return
+        try {
+            await navigator.clipboard.writeText(pwd)
+            setCopyHint('Copié dans le presse-papiers.')
+        } catch {
+            try {
+                const el = passwordFieldRef.current
+                if (el) {
+                    el.focus()
+                    el.select()
+                    document.execCommand('copy')
+                    setCopyHint('Copié (méthode classique).')
+                }
+            } catch {
+                setCopyHint('Sélectionnez le champ puis Ctrl+C.')
+            }
         }
+        setTimeout(() => setCopyHint(''), 3500)
     }
+
+    const setField = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -59,7 +117,6 @@ export default function UserFormModal({ isOpen, onClose, onSuccess, initialData 
 
         const fd = new FormData()
         Object.entries(form).forEach(([k, v]) => fd.append(k, v))
-        if (avatarFile) fd.append('avatar', avatarFile)
 
         try {
             if (initialData) {
@@ -73,9 +130,13 @@ export default function UserFormModal({ isOpen, onClose, onSuccess, initialData 
                 const r = await api.post('/users', fd, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 })
-                setGeneratedPassword(r.data.generated_password)
-                onSuccess()
-                // Don't close immediately if we created, show password modal first
+                const pwd = r.data?.generated_password
+                if (pwd) {
+                    setGeneratedPassword(pwd)
+                } else {
+                    setError("Réponse serveur sans mot de passe généré. Vérifiez les logs ou la configuration mail.")
+                }
+                // onSuccess only after admin copies password (Terminer) — do not close here or the modal unmounts
             }
         } catch (err) {
             const errors = err.response?.data?.errors
@@ -112,34 +173,53 @@ export default function UserFormModal({ isOpen, onClose, onSuccess, initialData 
                                 </div>
 
                                 <form onSubmit={handleSubmit} className="space-y-10">
-                                    <div className="flex flex-col md:flex-row gap-8 items-center p-8 bg-primary/5 border border-white/5 rounded-3xl">
-                                        <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                                            <div className="w-24 h-24 rounded-3xl border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden bg-primary/5 transition-all group-hover:border-primary/50">
-                                                {avatarPreview ? (
-                                                    <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <ImageIcon size={24} className="text-text-dim/20" />
-                                                )}
-                                            </div>
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl">
-                                                <Edit3 size={20} className="text-text-main" />
-                                            </div>
-                                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                                        </div>
-                                        <div className="text-center md:text-left space-y-2">
-                                            <p className="text-xs font-bold text-text-main uppercase tracking-widest">Identité visuelle (Optionnel)</p>
-                                            <p className="text-[10px] text-text-dim leading-relaxed">
-                                                Taille recommandée: 512x512px. Formats supportés: PNG, JPG (Max 2Mo).
-                                            </p>
-                                        </div>
-                                    </div>
-
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         {[
                                             { label: 'Nom complet', key: 'name', type: 'text', icon: <User size={14} />, placeholder: 'Ex: Jean Dupont' },
                                             { label: 'Email opérationnel', key: 'email', type: 'email', icon: <Mail size={14} />, placeholder: 'jean.dupont@ChangeHub.tech' },
-                                            { label: 'Département', key: 'department', type: 'text', icon: <Building2 size={14} />, placeholder: 'Security Ops' },
-                                            { label: 'Titre de poste', key: 'job_title', type: 'text', icon: <Briefcase size={14} />, placeholder: 'Senior DevSecOps' },
+                                        ].map((field) => (
+                                            <div key={field.key} className="space-y-3 group">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-text-dim ml-1 flex items-center gap-2">
+                                                    {field.icon} {field.label}
+                                                </label>
+                                                <input
+                                                    required
+                                                    type={field.type}
+                                                    value={form[field.key]}
+                                                    onChange={e => setField(field.key, e.target.value)}
+                                                    className="w-full bg-primary/5 border border-white/5 rounded-2xl px-5 py-4 text-xs text-text-main placeholder:text-text-dim/20 focus:ring-1 focus:ring-primary/50 focus:bg-primary/10 transition-all shadow-inner"
+                                                    placeholder={field.placeholder}
+                                                />
+                                            </div>
+                                        ))}
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-text-dim ml-1 flex items-center gap-2">
+                                                <Building2 size={14} /> Département
+                                            </label>
+                                            <ChangeHubSelect
+                                                value={form.department}
+                                                onChange={(val) => setField('department', val)}
+                                                options={optionsWithCurrentValue(USER_DEPARTMENT_OPTIONS, form.department)}
+                                                icon={Building2}
+                                                placeholder="Sélectionner un département"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-text-dim ml-1 flex items-center gap-2">
+                                                <Briefcase size={14} /> Titre de poste
+                                            </label>
+                                            <ChangeHubSelect
+                                                value={form.job_title}
+                                                onChange={(val) => setField('job_title', val)}
+                                                options={optionsWithCurrentValue(USER_JOB_TITLE_OPTIONS, form.job_title)}
+                                                icon={Briefcase}
+                                                placeholder="Sélectionner un poste"
+                                            />
+                                        </div>
+
+                                        {[
                                             { label: 'Numéro de contact', key: 'phone', type: 'text', icon: <Phone size={14} />, placeholder: '+33 6 ...' },
                                             { label: 'Matricule / ID', key: 'employee_id', type: 'text', icon: <Hash size={14} />, placeholder: 'OPS-2024-...' },
                                         ].map((field) => (
@@ -148,7 +228,6 @@ export default function UserFormModal({ isOpen, onClose, onSuccess, initialData 
                                                     {field.icon} {field.label}
                                                 </label>
                                                 <input
-                                                    required={field.key === 'name' || field.key === 'email'}
                                                     type={field.type}
                                                     value={form[field.key]}
                                                     onChange={e => setField(field.key, e.target.value)}
@@ -246,15 +325,40 @@ export default function UserFormModal({ isOpen, onClose, onSuccess, initialData 
                                 </p>
                             </div>
 
-                            <div className="p-6 rounded-2xl bg-black/40 border border-white/5 font-mono text-xl tracking-[0.2em] relative group">
-                                <span className="text-primary group-hover:blur-sm transition-all duration-300 select-all">{generatedPassword}</span>
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-white">Copier</span>
-                                </div>
+                            <div className="space-y-3">
+                                <input
+                                    ref={passwordFieldRef}
+                                    readOnly
+                                    value={generatedPassword}
+                                    onFocus={(e) => e.target.select()}
+                                    onClick={(e) => e.target.select()}
+                                    className="w-full rounded-2xl bg-black/50 border border-white/10 px-4 py-4 font-mono text-base md:text-lg text-primary text-center tracking-wide outline-none focus:ring-2 focus:ring-primary/40 select-all cursor-text"
+                                    aria-label="Mot de passe généré"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={copyGeneratedPassword}
+                                    className="w-full inline-flex items-center justify-center gap-2 py-4 rounded-2xl bg-primary/20 border border-primary/40 text-primary font-black uppercase tracking-widest text-[10px] hover:bg-primary/30 transition-colors"
+                                >
+                                    <Copy size={16} />
+                                    Copier dans le presse-papiers
+                                </button>
+                                {copyHint && (
+                                    <p className="text-[11px] font-bold text-emerald-400/90 text-center">{copyHint}</p>
+                                )}
+                                <p className="text-[10px] text-[#B5A1C2]/45 text-center leading-relaxed">
+                                    Astuce : triple-clic dans le champ pour tout sélectionner, ou utilisez le bouton ci-dessus.
+                                </p>
                             </div>
 
                             <button
-                                onClick={onClose}
+                                type="button"
+                                onClick={() => {
+                                    setCopyHint('')
+                                    setGeneratedPassword('')
+                                    onSuccess()
+                                    onClose()
+                                }}
                                 className="w-full py-5 bg-white/5 hover:bg-primary/20 text-text-dim hover:text-primary rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
                             >
                                 Terminer

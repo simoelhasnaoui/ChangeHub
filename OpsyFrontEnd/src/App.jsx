@@ -21,6 +21,8 @@ import AdminDashboard from './pages/admin/Dashboard'
 import Users from './pages/admin/Users'
 import AdminChangeDetail from './pages/admin/ChangeDetail'
 
+import ProfilePage from './pages/shared/ProfilePage'
+
 const wrap = (roles, children) => (
   <PrivateRoute roles={roles}>
     <Layout>{children}</Layout>
@@ -44,23 +46,27 @@ export default function App() {
             <Route path="/requester/new" element={wrap(['requester'], <NewRequest />)} />
             <Route path="/requester/changes/:id" element={wrap(['requester'], <ChangeDetail />)} />
             <Route path="/requester/changes/:id/edit" element={wrap(['requester'], <NewRequest />)} />
+            <Route path="/requester/profile" element={wrap(['requester'], <ProfilePage />)} />
 
             {/* Approver */}
             <Route path="/approver" element={wrap(['approver'], <ApproverDashboard />)} />
             <Route path="/approver/changes" element={wrap(['approver'], <ApproverDashboard />)} />
             <Route path="/approver/changes/:id" element={wrap(['approver'], <ReviewChange />)} />
+            <Route path="/approver/profile" element={wrap(['approver'], <ProfilePage />)} />
 
             {/* Implementer */}
             <Route path="/implementer" element={wrap(['implementer'], <ImplementerDashboard />)} />
             <Route path="/implementer/changes" element={wrap(['implementer'], <ImplementerGitHub />)} />
             <Route path="/implementer/changes/:id" element={wrap(['implementer'], <ManageChange />)} />
             <Route path="/implementer/github" element={wrap(['implementer'], <ImplementerGitHub />)} />
+            <Route path="/implementer/profile" element={wrap(['implementer'], <ProfilePage />)} />
 
             {/* Admin */}
             <Route path="/admin" element={wrap(['admin'], <AdminDashboard />)} />
             <Route path="/admin/changes" element={wrap(['admin'], <AdminDashboard />)} />
             <Route path="/admin/changes/:id" element={wrap(['admin'], <AdminChangeDetail />)} />
             <Route path="/admin/users" element={wrap(['admin'], <Users />)} />
+            <Route path="/admin/profile" element={wrap(['admin'], <ProfilePage />)} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

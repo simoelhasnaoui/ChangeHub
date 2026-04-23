@@ -17,7 +17,7 @@ class ChangeRequestController extends Controller {
     public function index(Request $request) {
         $user = $request->user();
 
-        $query = ChangeRequest::with(['changeType', 'requester', 'implementers']);
+        $query = ChangeRequest::with(['changeType', 'requester', 'implementers', 'repoLink']);
 
         if ($user->isRequester()) {
             $query->where('requester_id', $user->id);
@@ -31,6 +31,53 @@ class ChangeRequestController extends Controller {
         // admin sees all
 
         return response()->json($query->latest()->get());
+    }
+
+    // Implementer activity feed (latest history entries for assigned requests)
+    public function activity(Request $request)
+    {
+        $user = $request->user();
+
+        abort_unless($user->isImplementer(), 403, 'Forbidden');
+
+        $perPage = max(1, min(30, (int) $request->query('per_page', 10)));
+        $page = max(1, (int) $request->query('page', 1));
+
+        $paginator = ChangeHistory::with(['user', 'changeRequest'])
+            ->whereHas('changeRequest.implementers', function ($q) use ($user) {
+                $q->where('users.id', $user->id);
+            })
+            ->latest()
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        $items = $paginator->getCollection()
+            ->map(function ($h) {
+                return [
+                    'id' => $h->id,
+                    'change_request_id' => $h->change_request_id,
+                    'title' => $h->changeRequest?->title,
+                    'old_status' => $h->old_status,
+                    'new_status' => $h->new_status,
+                    'comment' => $h->comment,
+                    'by' => [
+                        'id' => $h->user?->id,
+                        'name' => $h->user?->name,
+                        'role' => $h->user?->role,
+                    ],
+                    'created_at' => $h->created_at,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'items' => $items,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ]);
     }
 
     // Create
@@ -219,6 +266,9 @@ class ChangeRequestController extends Controller {
 
         // Notify Requester if done
         if ($request->status === 'done') {
+            // New delivery cycle: allow the requester to confirm again after a prior rejection
+            $changeRequest->update(['requester_validation_status' => 'pending']);
+
             $changeRequest->requester->notify(new ChangeRequestNotification(
                 "L'implémentation de '{$changeRequest->title}' est terminée. Votre validation est requise.",
                 "/requester/changes/{$changeRequest->id}"

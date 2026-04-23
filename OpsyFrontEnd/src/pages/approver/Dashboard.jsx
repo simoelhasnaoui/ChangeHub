@@ -8,6 +8,7 @@ import {
 import { Link } from 'react-router-dom'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
+import { displayUserName } from '../../utils/displayUserName'
 import { useSearch } from '../../context/SearchContext'
 
 // ─── Constants & Localization ───────────────────────────────────────────────
@@ -113,7 +114,13 @@ export default function ApproverDashboard() {
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-white/5">
                 <div className="space-y-4">
                     <p className="text-[11px] font-black uppercase tracking-[0.6em] text-primary">DECISION_TERMINAL</p>
-                    <h1 className="text-5xl font-light tracking-tight text-white leading-none">Console <span className="font-medium text-white/40 group-hover:text-white transition-colors">Approbateur</span></h1>
+                    <h1 className="text-5xl font-light tracking-tight text-white leading-none">
+                        Bonjour,{' '}
+                        <span className="font-medium text-white normal-case">{displayUserName(user)}</span>
+                    </h1>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#B5A1C2]/40 mt-2">
+                        Console approbateur
+                    </p>
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#B5A1C2]/40">
                         {stats.pending > 0
                             ? `${stats.pending} demandes nécessitent une action immédiate`

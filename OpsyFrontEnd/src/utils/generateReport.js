@@ -1,7 +1,38 @@
 /**
- * Generates and downloads a printable HTML report for a change request + analysis.
- * Opens a print-ready window that the user can save as PDF via the browser's Print dialog.
+ * Print-ready HTML report: change request + analysis, incidents, history.
  */
+
+function escapeHtml(s) {
+    if (s == null) return ''
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+}
+
+function implementersLine(cr) {
+    if (cr.implementers?.length) {
+        return cr.implementers.map((u) => u.name).filter(Boolean).join(', ') || '—'
+    }
+    return cr.implementer?.name || '—'
+}
+
+const STATUS_PILL = {
+    draft: 'pill pill--muted',
+    pending_approval: 'pill pill--amber',
+    approved: 'pill pill--blue',
+    in_progress: 'pill pill--violet',
+    done: 'pill pill--green',
+    rejected: 'pill pill--rose',
+}
+
+const RISK_PILL = {
+    low: 'pill pill--risk-low',
+    medium: 'pill pill--risk-mid',
+    high: 'pill pill--risk-high',
+}
+
 export function generateReport(cr, analysis) {
     const statusLabels = {
         draft: 'Brouillon',
@@ -18,257 +49,449 @@ export function generateReport(cr, analysis) {
         high: 'Élevé',
     }
 
-    const now = new Date().toLocaleString('fr-FR')
+    const title = escapeHtml(cr.title)
+    const now = new Date().toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })
     const plannedDate = cr.planned_date
-        ? new Date(cr.planned_date).toLocaleDateString('fr-FR')
+        ? new Date(cr.planned_date).toLocaleDateString('fr-FR', { dateStyle: 'long' })
         : '—'
 
-    const html = `
-<!DOCTYPE html>
+    const statusLabel = statusLabels[cr.status] || cr.status
+    const riskLabel = riskLabels[cr.risk_level] || cr.risk_level || '—'
+    const statusClass = STATUS_PILL[cr.status] || 'pill pill--muted'
+    const riskClass = RISK_PILL[cr.risk_level] || 'pill pill--muted'
+
+    const fields = [
+        { k: 'Référence', v: `#${cr.id}` },
+        { k: 'Type de changement', v: cr.change_type?.name || '—' },
+        { k: 'Système affecté', v: cr.affected_system || '—' },
+        { k: 'Date planifiée', v: plannedDate },
+        { k: 'Demandeur', v: cr.requester?.name || '—' },
+        { k: 'Implémentation', v: implementersLine(cr) },
+        { k: 'Ouverture du dossier', v: new Date(cr.created_at).toLocaleString('fr-FR') },
+    ]
+
+    const fieldsHtml = fields
+        .map(
+            ({ k, v }) => `
+            <div class="field">
+                <span class="field__k">${escapeHtml(k)}</span>
+                <span class="field__v">${escapeHtml(v)}</span>
+            </div>`
+        )
+        .join('')
+
+    const desc = cr.description ? escapeHtml(cr.description) : '—'
+
+    const analysisOutcomeClass = analysis?.incident_occurred ? 'outcome outcome--warn' : 'outcome outcome--ok'
+    const analysisOutcomeText = analysis?.incident_occurred
+        ? 'Incident constaté après la mise en production.'
+        : 'Aucun incident signalé après la mise en production.'
+
+    const analysisHtml = analysis
+        ? `
+    <section class="block">
+        <div class="block__head">
+            <h2 class="block__title">Analyse post-changement</h2>
+        </div>
+        <div class="${analysisOutcomeClass}">
+            <strong>${escapeHtml(analysisOutcomeText)}</strong>
+        </div>
+        ${analysis.description ? `<div class="stack"><span class="mini-label">Constat</span><p class="body-text">${escapeHtml(analysis.description)}</p></div>` : ''}
+        ${analysis.impact ? `<div class="stack"><span class="mini-label">Impact</span><p class="body-text">${escapeHtml(analysis.impact)}</p></div>` : ''}
+        ${analysis.solution ? `<div class="stack"><span class="mini-label">Mesures / solution</span><p class="body-text">${escapeHtml(analysis.solution)}</p></div>` : ''}
+    </section>`
+        : ''
+
+    const incidentsHtml =
+        cr.incidents && cr.incidents.length > 0
+            ? `
+    <section class="block">
+        <div class="block__head">
+            <h2 class="block__title">Incidents liés</h2>
+        </div>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th scope="col" style="width:22%">Intitulé</th>
+                        <th scope="col" style="width:12%">Gravité</th>
+                        <th scope="col">Description</th>
+                        <th scope="col" style="width:14%">Résolution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${cr.incidents
+                        .map(
+                            (inc) => `
+                    <tr>
+                        <td><strong>${escapeHtml(inc.title)}</strong></td>
+                        <td><span class="sev sev--${escapeHtml(inc.severity || '')}">${escapeHtml(inc.severity || '—')}</span></td>
+                        <td class="muted">${escapeHtml(inc.description || '—')}</td>
+                        <td>${inc.time_to_resolve_minutes != null ? `${escapeHtml(String(inc.time_to_resolve_minutes))} min` : '—'}</td>
+                    </tr>`
+                        )
+                        .join('')}
+                </tbody>
+            </table>
+        </div>
+    </section>`
+            : ''
+
+    const historyHtml =
+        cr.histories && cr.histories.length > 0
+            ? `
+    <section class="block">
+        <div class="block__head">
+            <h2 class="block__title">Journal des statuts</h2>
+        </div>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th scope="col" style="width:18%">Horodatage</th>
+                        <th scope="col" style="width:16%">Acteur</th>
+                        <th scope="col" style="width:26%">Transition</th>
+                        <th scope="col">Commentaire</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${cr.histories
+                        .map((h) => {
+                            const oldS = statusLabels[h.old_status] || h.old_status || '—'
+                            const newS = statusLabels[h.new_status] || h.new_status || '—'
+                            return `
+                    <tr>
+                        <td class="nowrap">${escapeHtml(new Date(h.created_at).toLocaleString('fr-FR'))}</td>
+                        <td>${escapeHtml(h.user?.name || '—')}</td>
+                        <td><span class="tx">${escapeHtml(oldS)}</span> <span class="arrow">→</span> <span class="tx-strong">${escapeHtml(newS)}</span></td>
+                        <td class="muted">${escapeHtml(h.comment || '—')}</td>
+                    </tr>`
+                        })
+                        .join('')}
+                </tbody>
+            </table>
+        </div>
+    </section>`
+            : ''
+
+    const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8" />
-    <title>Rapport — ${cr.title}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rapport · ${title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
     <style>
+        :root {
+            --ink: #14121a;
+            --ink-soft: #3d384d;
+            --muted: #6b6578;
+            --line: #e8e4ef;
+            --wash: #f7f5fb;
+            --accent: #6b5393;
+            --accent-soft: rgba(107, 83, 147, 0.12);
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            color: #1a202c;
+            font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+            color: var(--ink);
+            background: #ece8f2;
+            min-height: 100vh;
+            padding: 28px 20px 40px;
+            font-size: 12.5px;
+            line-height: 1.55;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .sheet {
+            max-width: 800px;
+            margin: 0 auto;
             background: #fff;
-            padding: 40px;
-            font-size: 13px;
-            line-height: 1.6;
+            border-radius: 2px;
+            box-shadow: 0 1px 0 rgba(20, 18, 26, 0.06), 0 12px 40px rgba(20, 18, 26, 0.08);
+            overflow: hidden;
         }
-
-        /* Header */
-        .header {
+        .hero {
+            position: relative;
+            padding: 36px 40px 32px;
+            background: linear-gradient(165deg, #faf9fc 0%, #fff 48%);
+            border-bottom: 1px solid var(--line);
+        }
+        .hero::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: linear-gradient(180deg, var(--accent) 0%, #9b7ec4 100%);
+        }
+        .eyebrow {
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 3px solid #2563eb;
-            padding-bottom: 20px;
-            margin-bottom: 28px;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
         }
-        .header-brand { font-size: 22px; font-weight: 700; color: #2563eb; letter-spacing: -0.5px; }
-        .header-subtitle { font-size: 12px; color: #6b7280; margin-top: 2px; }
-        .header-meta { text-align: right; font-size: 11px; color: #6b7280; }
-        .header-meta strong { display: block; font-size: 13px; color: #374151; margin-bottom: 2px; }
-
-        /* Section title */
-        .section-title {
+        .eyebrow span.k {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        .ref {
             font-size: 11px;
             font-weight: 600;
-            color: #6b7280;
+            letter-spacing: 0.04em;
+            color: var(--accent);
+            background: var(--accent-soft);
+            padding: 5px 11px;
+            border-radius: 999px;
+        }
+        h1 {
+            font-family: "IBM Plex Serif", Georgia, serif;
+            font-size: 26px;
+            font-weight: 500;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            color: var(--ink);
+            max-width: 34em;
+        }
+        .sub {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            margin-top: 22px;
+            padding-top: 20px;
+            border-top: 1px solid var(--line);
+        }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+        .pill .tag { font-weight: 500; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+        .pill--muted { background: #f4f4f5; color: #3f3f46; border-color: #e4e4e7; }
+        .pill--amber { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+        .pill--blue { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+        .pill--violet { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe; }
+        .pill--green { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+        .pill--rose { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
+        .pill--risk-low { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+        .pill--risk-mid { background: #fffbeb; color: #a16207; border-color: #fde68a; }
+        .pill--risk-high { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+
+        main { padding: 8px 40px 36px; }
+
+        .block { margin-top: 28px; }
+        .block__head {
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--line);
+        }
+        .block__title {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 12px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid #e5e7eb;
+            color: var(--muted);
         }
 
-        /* Info grid */
-        .section { margin-bottom: 28px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .field label {
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0 28px;
+        }
+        @media (max-width: 640px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        .field {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 8px 16px;
+            padding: 11px 0;
+            border-bottom: 1px solid #f4f2f8;
+        }
+        .field__k { color: var(--muted); font-size: 11px; font-weight: 500; }
+        .field__v { color: var(--ink); font-weight: 500; }
+
+        .panel {
+            background: var(--wash);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 18px 20px;
+        }
+        .panel--prose {
+            font-family: "IBM Plex Serif", Georgia, serif;
+            font-size: 13px;
+            line-height: 1.65;
+            color: var(--ink-soft);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .outcome {
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            font-size: 12.5px;
+            line-height: 1.5;
+        }
+        .outcome--ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #14532d; }
+        .outcome--warn { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; }
+
+        .stack { margin-bottom: 14px; }
+        .stack:last-child { margin-bottom: 0; }
+        .mini-label {
             display: block;
             font-size: 10px;
-            color: #9ca3af;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-bottom: 2px;
-        }
-        .field value { font-weight: 600; color: #111827; font-size: 13px; }
-
-        /* Status badge */
-        .badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 999px;
-            font-size: 11px;
             font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
         }
-        .badge-done { background: #d1fae5; color: #065f46; }
-        .badge-approved { background: #dbeafe; color: #1e40af; }
-        .badge-in_progress { background: #ede9fe; color: #5b21b6; }
-        .badge-pending_approval { background: #fef3c7; color: #92400e; }
-        .badge-rejected { background: #fee2e2; color: #991b1b; }
-        .badge-draft { background: #f3f4f6; color: #374151; }
-
-        .risk-high { color: #dc2626; font-weight: 700; }
-        .risk-medium { color: #d97706; font-weight: 700; }
-        .risk-low { color: #16a34a; font-weight: 700; }
-
-        /* Description block */
-        .description-box {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 14px;
-            color: #374151;
-            font-size: 13px;
+        .body-text {
+            font-family: "IBM Plex Serif", Georgia, serif;
+            font-size: 12.5px;
+            color: var(--ink-soft);
+            white-space: pre-wrap;
+            word-break: break-word;
         }
 
-        /* Analysis section */
-        .analysis-block {
-            background: ${analysis?.incident_occurred ? '#fff7ed' : '#f0fdf4'};
-            border: 1px solid ${analysis?.incident_occurred ? '#fed7aa' : '#bbf7d0'};
-            border-radius: 8px;
-            padding: 16px;
+        .table-wrap {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            overflow: hidden;
         }
-        .incident-flag {
-            font-weight: 700;
-            font-size: 14px;
-            color: ${analysis?.incident_occurred ? '#c2410c' : '#15803d'};
-            margin-bottom: 12px;
-        }
-
-        /* History table */
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        thead tr { background: #f3f4f6; }
-        th { text-align: left; padding: 8px 10px; font-weight: 600; color: #6b7280; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
-        td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; }
-
-        /* Footer */
-        .footer {
-            margin-top: 36px;
-            padding-top: 16px;
-            border-top: 1px solid #e5e7eb;
+        table.data { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+        table.data thead { background: #faf9fc; }
+        table.data th {
+            text-align: left;
+            padding: 10px 14px;
+            font-weight: 600;
             font-size: 10px;
-            color: #9ca3af;
-            display: flex;
-            justify-content: space-between;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--line);
         }
+        table.data td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f4f2f8;
+            vertical-align: top;
+        }
+        table.data tbody tr:last-child td { border-bottom: none; }
+        table.data tbody tr:nth-child(even) { background: #fcfbfe; }
+        .muted { color: var(--muted); }
+        .nowrap { white-space: nowrap; }
+        .tx { color: var(--muted); }
+        .tx-strong { font-weight: 600; color: var(--ink); }
+        .arrow { color: #c4bdd4; margin: 0 4px; }
+
+        .sev {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+        .sev--high { background: #fef2f2; color: #b91c1c; }
+        .sev--medium { background: #fffbeb; color: #b45309; }
+        .sev--low { background: #f0fdf4; color: #166534; }
+        .sev:not(.sev--high):not(.sev--medium):not(.sev--low) { background: #f4f4f5; color: #52525b; }
+
+        footer {
+            padding: 20px 40px 24px;
+            border-top: 1px solid var(--line);
+            font-size: 10px;
+            color: var(--muted);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px;
+            background: #faf9fc;
+        }
+        footer strong { color: var(--ink-soft); font-weight: 600; }
 
         @media print {
-            body { padding: 20px; }
-            @page { margin: 15mm; }
+            body { background: #fff; padding: 0; }
+            .sheet { box-shadow: none; border-radius: 0; max-width: none; }
+            .hero { padding: 0 0 20px; }
+            main { padding: 0 0 24px; }
+            footer { padding: 16px 0 0; background: transparent; }
+            @page { size: A4; margin: 14mm 16mm; }
         }
     </style>
 </head>
 <body>
+    <article class="sheet">
+        <header class="hero">
+            <div class="eyebrow">
+                <span class="k">Rapport d'intervention</span>
+                <span class="ref">#${cr.id}</span>
+            </div>
+            <h1>${title}</h1>
+            <p class="sub">ChangeHub · document généré le ${escapeHtml(now)}</p>
+            <div class="summary">
+                <span class="pill ${statusClass}"><span class="tag">Statut</span>${escapeHtml(statusLabel)}</span>
+                <span class="pill ${riskClass}"><span class="tag">Risque</span>${escapeHtml(riskLabel)}</span>
+            </div>
+        </header>
 
-<!-- Header -->
-<div class="header">
-    <div style="display: flex; align-items: center; gap: 15px;">
-        <img src="${window.location.origin}/logo.png" style="height: 45px; width: auto;" alt="Logo" />
-        <div>
-            <div class="header-brand">ChangeHub</div>
-            <div class="header-subtitle">Rapport de demande de changement</div>
-        </div>
-    </div>
-    <div class="header-meta">
-        <strong>${cr.title}</strong>
-        Généré le ${now}<br/>
-        Ref. #${cr.id}
-    </div>
-</div>
+        <main>
+            <section class="block">
+                <div class="block__head">
+                    <h2 class="block__title">Fiche signalétique</h2>
+                </div>
+                <div class="grid">${fieldsHtml}</div>
+            </section>
 
-<!-- Request details -->
-<div class="section">
-    <div class="section-title">Informations générales</div>
-    <div class="grid">
-        <div class="field"><label>Statut</label><value>
-            <span class="badge badge-${cr.status}">${statusLabels[cr.status] || cr.status}</span>
-        </value></div>
-        <div class="field"><label>Niveau de risque</label><value class="risk-${cr.risk_level}">${riskLabels[cr.risk_level] || cr.risk_level}</value></div>
-        <div class="field"><label>Type de changement</label><value>${cr.change_type?.name || '—'}</value></div>
-        <div class="field"><label>Système affecté</label><value>${cr.affected_system || '—'}</value></div>
-        <div class="field"><label>Date planifiée</label><value>${plannedDate}</value></div>
-        <div class="field"><label>Demandeur</label><value>${cr.requester?.name || '—'}</value></div>
-        <div class="field"><label>Implémenteur</label><value>${cr.implementer?.name || '—'}</value></div>
-        <div class="field"><label>Créé le</label><value>${new Date(cr.created_at).toLocaleString('fr-FR')}</value></div>
-    </div>
-</div>
+            <section class="block">
+                <div class="block__head">
+                    <h2 class="block__title">Description de la demande</h2>
+                </div>
+                <div class="panel panel--prose">${desc}</div>
+            </section>
+            ${analysisHtml}
+            ${incidentsHtml}
+            ${historyHtml}
+        </main>
 
-<!-- Description -->
-<div class="section">
-    <div class="section-title">Description</div>
-    <div class="description-box">${cr.description || '—'}</div>
-</div>
-
-${analysis ? `
-<!-- Post-change analysis -->
-<div class="section">
-    <div class="section-title">Analyse post-changement</div>
-    <div class="analysis-block">
-        <div class="incident-flag">${analysis.incident_occurred ? '⚠ Incident survenu' : '✓ Aucun incident signalé'}</div>
-        ${analysis.description ? `<div class="field" style="margin-bottom:10px"><label>Description</label><div style="margin-top:4px;color:#374151;">${analysis.description}</div></div>` : ''}
-        ${analysis.impact ? `<div class="field" style="margin-bottom:10px"><label>Impact</label><div style="margin-top:4px;color:#374151;">${analysis.impact}</div></div>` : ''}
-        ${analysis.solution ? `<div class="field"><label>Solution apportée</label><div style="margin-top:4px;color:#374151;">${analysis.solution}</div></div>` : ''}
-    </div>
-</div>
-` : ''}
-
-${cr.incidents && cr.incidents.length > 0 ? `
-<!-- Incidents Registry -->
-<div class="section">
-    <div class="section-title">Registre des Incidents Déclarés</div>
-    <table style="font-size: 11px;">
-        <thead>
-            <tr style="background: #fff1f2;">
-                <th style="color: #991b1b; width: 25%;">Incident / Sévérité</th>
-                <th style="color: #991b1b; width: 50%;">Détails & Impact</th>
-                <th style="color: #991b1b; width: 25%;">Temps de résolution</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${cr.incidents.map(inc => `
-            <tr>
-                <td style="vertical-align: top;">
-                    <strong style="display: block; color: #111827;">${inc.title}</strong>
-                    <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: ${inc.severity === 'high' ? '#dc2626' : (inc.severity === 'medium' ? '#d97706' : '#16a34a')}">
-                        ${inc.severity}
-                    </span>
-                </td>
-                <td style="vertical-align: top; color: #4b5563;">
-                    ${inc.description || '—'}
-                </td>
-                <td style="vertical-align: top; font-weight: 600; color: #111827;">
-                    ${inc.time_to_resolve_minutes} min
-                </td>
-            </tr>`).join('')}
-        </tbody>
-    </table>
-</div>
-` : ''}
-
-${cr.histories && cr.histories.length > 0 ? `
-<!-- History -->
-<div class="section">
-    <div class="section-title">Historique des actions</div>
-    <table>
-        <thead>
-            <tr>
-                <th>Utilisateur</th>
-                <th>Ancien statut</th>
-                <th>Nouveau statut</th>
-                <th>Commentaire</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${cr.histories.map(h => `
-            <tr>
-                <td>${h.user?.name || '—'}</td>
-                <td>${statusLabels[h.old_status] || h.old_status || '—'}</td>
-                <td>${statusLabels[h.new_status] || h.new_status || '—'}</td>
-                <td>${h.comment || '—'}</td>
-                <td>${new Date(h.created_at).toLocaleString('fr-FR')}</td>
-            </tr>`).join('')}
-        </tbody>
-    </table>
-</div>
-` : ''}
-
-<!-- Footer -->
-<div class="footer">
-    <span>ChangeHub — Gestion des changements techniques</span>
-    <span>Rapport généré le ${now}</span>
-</div>
-
-<script>
-    window.onload = () => { window.print(); }
-</script>
+        <footer>
+            <span><strong>ChangeHub</strong> — traçabilité des changements</span>
+            <span>Réf. dossier #${cr.id}</span>
+        </footer>
+    </article>
+    <script>
+        (function () {
+            function printDoc() {
+                window.print();
+            }
+            function schedule() {
+                if (document.fonts && document.fonts.ready) {
+                    document.fonts.ready.then(function () { setTimeout(printDoc, 150); });
+                } else {
+                    setTimeout(printDoc, 400);
+                }
+            }
+            window.addEventListener("load", schedule);
+        })();
+    </script>
 </body>
 </html>`
 

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\GitHubController;
+use App\Http\Controllers\Api\RepoLinkController;
 
 // Public
 Route::post('/login',  [AuthController::class, 'login']);
@@ -28,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/github/link/start', [GitHubController::class, 'startLink']);
     Route::post('/github/disconnect', [GitHubController::class, 'disconnect']);
     Route::get('/github/repos', [GitHubController::class, 'repos']);
+    Route::post('/github/repo-insights', [GitHubController::class, 'repoInsights']);
 
     // Change types (all roles — used in forms)
     Route::get('/change-types', [ChangeTypeController::class, 'index']);
@@ -45,10 +47,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Change requests — CRUD
     Route::get('/change-requests', [ChangeRequestController::class, 'index']);
+    Route::get('/change-requests/activity', [ChangeRequestController::class, 'activity']);
     Route::post('/change-requests', [ChangeRequestController::class, 'store']);
     Route::get('/change-requests/{changeRequest}', [ChangeRequestController::class, 'show']);
     Route::put('/change-requests/{changeRequest}', [ChangeRequestController::class, 'update']);
     Route::delete('/change-requests/{changeRequest}', [ChangeRequestController::class, 'destroy']);
+    Route::post('/change-requests/{changeRequest}/repo-link', [RepoLinkController::class, 'upsert']);
 
     // Workflow actions
     Route::post('/change-requests/{changeRequest}/submit', [ChangeRequestController::class, 'submit']);

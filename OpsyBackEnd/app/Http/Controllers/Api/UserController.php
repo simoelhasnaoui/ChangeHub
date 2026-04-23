@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-
 class UserController extends Controller {
 
     public function index(Request $request) {
@@ -30,25 +28,24 @@ class UserController extends Controller {
             'phone'       => 'nullable|string|max:255',
             'employee_id' => 'nullable|string|max:255',
             'status'      => 'nullable|in:active,inactive',
-            'avatar'      => 'nullable|image|max:2048',
         ]);
 
         $generatedPassword = \Illuminate\Support\Str::password(12, true, true, true, false);
-        $data['password'] = Hash::make($generatedPassword);
+        // User model uses 'password' => 'hashed' cast — assign plain text only (do not Hash::make here)
+        $data['password'] = $generatedPassword;
         $data['force_password_change'] = true;
-
-        if ($request->hasFile('avatar')) {
-            $data['avatar_path'] = $request->file('avatar')->store('avatars', 'public');
-        }
 
         $user = User::create($data);
 
-        // Send Welcome Email (Assuming WelcomeUserMail exists/will be created)
-        \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\WelcomeUserMail($user, $generatedPassword));
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\WelcomeUserMail($user, $generatedPassword));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('WelcomeUserMail failed: '.$e->getMessage());
+        }
 
         return response()->json([
             'user' => $user,
-            'generated_password' => $generatedPassword
+            'generated_password' => $generatedPassword,
         ], 201);
     }
 
@@ -64,12 +61,7 @@ class UserController extends Controller {
             'phone'       => 'nullable|string|max:255',
             'employee_id' => 'nullable|string|max:255',
             'status'      => 'nullable|in:active,inactive',
-            'avatar'      => 'nullable|image|max:2048',
         ]);
-
-        if ($request->hasFile('avatar')) {
-            $data['avatar_path'] = $request->file('avatar')->store('avatars', 'public');
-        }
 
         $user->update($data);
 
@@ -80,15 +72,22 @@ class UserController extends Controller {
         abort_if(! $request->user()->isAdmin(), 403);
 
         $generatedPassword = \Illuminate\Support\Str::password(12, true, true, true, false);
-        
+
         $user->update([
-            'password' => Hash::make($generatedPassword),
-            'force_password_change' => true
+            'password' => $generatedPassword,
+            'force_password_change' => true,
         ]);
 
-        \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\TemporaryPasswordMail($user, $generatedPassword));
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\TemporaryPasswordMail($user, $generatedPassword));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('TemporaryPasswordMail failed: '.$e->getMessage());
+        }
 
-        return response()->json(['message' => 'Mot de passe réinitialisé envoyé.']);
+        return response()->json([
+            'message' => 'Mot de passe réinitialisé.',
+            'generated_password' => $generatedPassword,
+        ]);
     }
 
     public function destroy(Request $request, User $user) {

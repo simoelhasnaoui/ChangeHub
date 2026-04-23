@@ -1,9 +1,7 @@
 ﻿import { useEffect, useRef, useState, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate, NavLink, useLocation } from 'react-router-dom'
-import { Search, Shield, X, Key, Check } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Search } from 'lucide-react'
 import { useSearch } from '../context/SearchContext'
 import ChangeHubLogo from './ChangeHubLogo'
 import NotificationCenter from './NotificationCenter'
@@ -59,10 +57,10 @@ const icons = {
       <polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   ),
-  password: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+  profile: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   ),
 }
@@ -95,16 +93,6 @@ export default function Layout({ children }) {
   const { user, login, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-
-  // Password Change State
-  const [showPwdModal, setShowPwdModal] = useState(false)
-  const isForcedPwdChange = user?.force_password_change === true;
-  const showPasswordModal = showPwdModal || isForcedPwdChange;
-
-  const [pwdForm, setPwdForm] = useState({ current_password: '', new_password: '', new_password_confirmation: '' })
-  const [pwdLoading, setPwdLoading] = useState(false)
-  const [pwdError, setPwdError] = useState('')
-  const [pwdSuccess, setPwdSuccess] = useState('')
 
   // Magnetic Logic State
   const containerRef = useRef(null);
@@ -243,36 +231,14 @@ export default function Layout({ children }) {
     navigate('/login')
   }
 
-  const handlePasswordSubmit = async (e) => {
-    e.preventDefault()
-    setPwdError('')
-    setPwdSuccess('')
-    setPwdLoading(true)
-    try {
-      const api = (await import('../api/axios')).default
-      await api.post('/password/change', pwdForm)
-      setPwdSuccess('Mot de passe mis à jour !')
+  const profilePath = user?.role ? `/${user.role}/profile` : '/login'
 
-      if (isForcedPwdChange) {
-        const updatedUser = { ...user, force_password_change: false }
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-        window.location.reload()
-      } else {
-        setTimeout(() => { setShowPwdModal(false); setPwdSuccess(''); setPwdForm({ current_password: '', new_password: '', new_password_confirmation: '' }) }, 1500)
-      }
-    } catch (err) {
-      const errors = err.response?.data?.errors;
-      let errMsg = 'Erreur lors de la mise à jour.';
-      if (errors) {
-        errMsg = Object.values(errors).flat()[0];
-      } else if (err.response?.data?.message) {
-        errMsg = err.response?.data?.message;
-      }
-      setPwdError(errMsg)
-    } finally {
-      setPwdLoading(false)
+  useEffect(() => {
+    if (!user?.force_password_change || !user?.role) return
+    if (location.pathname !== profilePath) {
+      navigate(profilePath, { replace: true })
     }
-  }
+  }, [user?.force_password_change, user?.role, location.pathname, profilePath, navigate])
 
   const links = navItems[user?.role] || []
   const isActive = (to) => {
@@ -393,7 +359,7 @@ export default function Layout({ children }) {
           />
 
           {/* Expansion Shelves (Nav + System) */}
-          {[...links, { label: 'Notifications' }, { label: 'Sécurité' }, { label: 'Sortie' }].map((_, i) => (
+          {[...links, { label: 'Notifications' }, { label: 'Profil' }, { label: 'Sortie' }].map((_, i) => (
             <div
               key={i}
               className={`absolute h-12 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${currentSide === 'left' ? 'left-1 origin-left' : 'right-1 origin-right'
@@ -485,11 +451,72 @@ export default function Layout({ children }) {
           <div className="flex flex-col items-center gap-4 mb-2 w-full relative">
             {[
               { id: 'notif', label: 'Notifications', icon: <NotificationCenter side={currentSide} onToggle={setIsNotifOpen} />, component: true },
-              { id: 'pwd', label: 'Sécurité', icon: icons.password, onClick: () => setShowPwdModal(true) },
-              { id: 'logout', label: 'Sortie', icon: icons.logout, onClick: handleLogout, danger: true }
+              { id: 'profile', label: 'Profil', icon: icons.profile, to: profilePath },
+              { id: 'logout', label: 'Sortie', icon: icons.logout, onClick: handleLogout, danger: true },
             ].map((item, i) => {
-              const idx = links.length + i;
-              const isHovered = hoveredIndex === idx;
+              const idx = links.length + i
+              const isHovered = hoveredIndex === idx
+
+              const rowInner = (isProfileActive) => (
+                <div
+                  className={`absolute h-12 transition-all duration-500 flex items-center ${currentSide === 'left'
+                    ? `left-0 flex-row ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'w-[210px]' : 'w-full'}`
+                    : `right-0 flex-row-reverse ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'w-[210px]' : 'w-full'}`
+                    }`}
+                >
+                  <div className="w-[74px] h-12 flex-shrink-0 flex items-center justify-center relative z-30">
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${
+                        item.danger
+                          ? 'text-rose-400 group-hover/sys:text-rose-500'
+                          : isProfileActive
+                            ? 'text-[#D5CBE5] bg-white/5'
+                            : 'text-[#816A9E]/60 group-hover/sys:text-[#D5CBE5]'
+                      }`}
+                    >
+                      {item.icon}
+                    </div>
+                  </div>
+                  <div
+                    className={`flex-1 flex items-center transition-all duration-500 overflow-hidden ${
+                      isHovered && !(item.id === 'notif' && isNotifOpen) ? 'opacity-100 px-4' : 'opacity-0 w-0'
+                    } ${currentSide === 'left' ? 'justify-start' : 'justify-end'}`}
+                  >
+                    <div className="w-[136px] overflow-hidden">
+                      <div
+                        className={`${isHovered ? (item.label.length > 10 ? 'animate-marquee' : '') : ''} whitespace-nowrap flex w-max justify-start`}
+                      >
+                        <span
+                          className={`text-[11px] font-bold uppercase tracking-[0.2em] py-1 ${item.danger ? 'text-rose-400' : 'text-[#D5CBE5]'}`}
+                        >
+                          {item.label}
+                        </span>
+                        {item.label.length > 10 && (
+                          <span className={`text-[11px] font-bold uppercase tracking-[0.2em] py-1 ml-12 ${item.danger ? 'text-rose-400' : 'text-[#D5CBE5]'}`}>
+                            {item.label}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+
+              if (item.id === 'profile') {
+                return (
+                  <NavLink
+                    key={item.id}
+                    to={item.to}
+                    end
+                    className="relative h-12 w-full flex items-center justify-center cursor-pointer group/sys decoration-none"
+                    onMouseEnter={() => setHoveredIndex(idx)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                    onClick={() => setHoveredIndex(null)}
+                  >
+                    {({ isActive }) => rowInner(isActive)}
+                  </NavLink>
+                )
+              }
 
               return (
                 <div
@@ -499,40 +526,9 @@ export default function Layout({ children }) {
                   onMouseLeave={() => setHoveredIndex(null)}
                   onClick={item.onClick}
                 >
-                  <div className={`absolute h-12 transition-all duration-500 flex items-center ${currentSide === 'left'
-                    ? `left-0 flex-row ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'w-[210px]' : 'w-full'}`
-                    : `right-0 flex-row-reverse ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'w-[210px]' : 'w-full'}`
-                    }`}>
-
-                    {/* Icon */}
-                    <div className="w-[74px] h-12 flex-shrink-0 flex items-center justify-center relative z-30">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${item.danger ? 'text-rose-400 group-hover/sys:text-rose-500' : 'text-[#816A9E]/60 group-hover/sys:text-[#D5CBE5]'
-                        }`}>
-                        {item.icon}
-                      </div>
-                    </div>
-
-                    {/* Label */}
-                    <div className={`flex-1 flex items-center transition-all duration-500 overflow-hidden ${isHovered && !(item.id === 'notif' && isNotifOpen) ? 'opacity-100 px-4' : 'opacity-0 w-0'
-                      } ${currentSide === 'left' ? 'justify-start' : 'justify-end'}`}>
-                      <div className="w-[136px] overflow-hidden">
-                        <div className={`${isHovered ? (item.label.length > 10 ? 'animate-marquee' : '') : ''} whitespace-nowrap flex w-max justify-start`}>
-                          <span className={`text-[11px] font-bold uppercase tracking-[0.2em] py-1 ${item.danger ? 'text-rose-400' : 'text-[#D5CBE5]'
-                            }`}>
-                            {item.label}
-                          </span>
-                          {item.label.length > 10 && (
-                            <span className={`text-[11px] font-bold uppercase tracking-[0.2em] py-1 ml-12 ${item.danger ? 'text-rose-400' : 'text-[#D5CBE5]'
-                              }`}>
-                              {item.label}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  {rowInner(false)}
                 </div>
-              );
+              )
             })}
           </div>
         </div>
@@ -588,117 +584,6 @@ export default function Layout({ children }) {
           </div>
         </div>
       </main>
-
-      {/* ── MODAL: GLOBAL PORTALS ── */}
-      {showPasswordModal && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-[#0F051E]/95 backdrop-blur-3xl overflow-y-auto">
-          <AnimatePresence>
-            <motion.div
-              key="pwd-modal"
-              initial={{ opacity: 0, scale: 0.9, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 30 }}
-              className="bg-[#150522] border border-white/10 rounded-[3rem] shadow-2xl max-w-lg w-full relative overflow-hidden"
-            >
-              {/* Decorative Glow */}
-              <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
-
-              <div className="p-10 space-y-10 relative z-10">
-                <div className="space-y-4 text-center">
-                  <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mx-auto text-primary mb-6 shadow-[0_0_30px_rgba(209,140,255,0.1)]">
-                    <Shield size={32} />
-                  </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">PROTOCOL_SECURITY</p>
-                  <h2 className="text-3xl font-light text-white tracking-tight uppercase leading-none">Accès <span className="font-medium text-white/40 text-2xl">Sécurisé</span></h2>
-                  <p className="text-[10px] text-[#B5A1C2]/40 font-black uppercase tracking-[0.2em] leading-relaxed mx-auto max-w-xs">
-                    {isForcedPwdChange
-                      ? "La mise à jour de vos identifiants temporaires est requise pour accéder aux couches applicatives."
-                      : "Veuillez confirmer vos nouveaux paramètres de chiffrement."
-                    }
-                  </p>
-                </div>
-
-                <form onSubmit={handlePasswordSubmit} className="space-y-6">
-                  <div className="space-y-3 group">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1 flex items-center gap-2">
-                      <Key size={12} /> Mot de passe actuel
-                    </label>
-                    <input
-                      required
-                      type="password"
-                      value={pwdForm.current_password}
-                      onChange={(e) => setPwdForm(f => ({ ...f, current_password: e.target.value }))}
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-5 text-xs text-white focus:ring-1 focus:ring-primary/50 focus:bg-white/10 transition-all outline-none"
-                      placeholder="••••••••"
-                    />
-                  </div>
-
-                  <div className="space-y-3 group text-left">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1 flex items-center gap-2">
-                      <Shield size={12} /> Nouvelle Clé
-                    </label>
-                    <input
-                      required
-                      type="password"
-                      value={pwdForm.new_password}
-                      onChange={(e) => setPwdForm(f => ({ ...f, new_password: e.target.value }))}
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-5 text-xs text-white focus:ring-1 focus:ring-primary/50 focus:bg-white/10 transition-all outline-none"
-                      placeholder="••••••••"
-                    />
-                  </div>
-
-                  <div className="space-y-3 group text-left">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40 ml-1 flex items-center gap-2">
-                      <Check size={12} /> Confirmation
-                    </label>
-                    <input
-                      required
-                      type="password"
-                      value={pwdForm.new_password_confirmation}
-                      onChange={(e) => setPwdForm(f => ({ ...f, new_password_confirmation: e.target.value }))}
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-5 text-xs text-white focus:ring-1 focus:ring-primary/50 focus:bg-white/10 transition-all outline-none"
-                      placeholder="••••••••"
-                    />
-                  </div>
-
-                  {pwdError && (
-                    <div className="text-[10px] font-bold text-rose-400 bg-rose-500/10 p-4 rounded-2xl border border-rose-500/20 text-center animate-pulse">
-                      {pwdError}
-                    </div>
-                  )}
-
-                  {pwdSuccess && (
-                    <div className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20 text-center">
-                      {pwdSuccess}
-                    </div>
-                  )}
-
-                  <div className="flex flex-col gap-4 pt-4">
-                    <button
-                      type="submit"
-                      disabled={pwdLoading}
-                      className="w-full py-5 bg-primary text-[#0F051E] font-black uppercase tracking-widest text-[11px] rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-primary/20 disabled:opacity-50"
-                    >
-                      {pwdLoading ? 'Synchronisation...' : 'Valider les accès'}
-                    </button>
-
-                    {!isForcedPwdChange && (
-                      <button
-                        type="button"
-                        onClick={() => setShowPwdModal(false)}
-                        className="w-full py-4 text-[#B5A1C2] hover:text-white font-black uppercase tracking-widest text-[10px] transition-colors"
-                      >
-                        Annuler
-                      </button>
-                    )}
-                  </div>
-                </form>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>,
-        document.body
-      )}
 
       {/* Animation Styles */}
       <style>{`

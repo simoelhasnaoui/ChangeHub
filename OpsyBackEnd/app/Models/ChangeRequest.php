@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ChangeRequestRepoLink;
 
 class ChangeRequest extends Model {
     protected $fillable = [
@@ -15,4 +16,5 @@ class ChangeRequest extends Model {
     public function histories()   { return $this->hasMany(ChangeHistory::class); }
     public function analysis()    { return $this->hasOne(PostChangeAnalysis::class); }
     public function incidents()   { return $this->hasMany(Incident::class); }
+    public function repoLink()    { return $this->hasOne(ChangeRequestRepoLink::class, 'change_request_id'); }
 }

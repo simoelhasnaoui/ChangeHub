@@ -8,6 +8,7 @@ import {
 import { Link } from 'react-router-dom'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
+import { displayUserName } from '../../utils/displayUserName'
 import { useSearch } from '../../context/SearchContext'
 import ConfirmModal from '../../components/ConfirmModal'
 
@@ -122,7 +123,10 @@ export default function RequesterDashboard() {
                 <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-white/5">
                     <div className="space-y-4">
                         <p className="text-[11px] font-black uppercase tracking-[0.6em] text-primary">REQUESTER_TERMINAL</p>
-                        <h1 className="text-5xl font-light tracking-tight text-white capitalize leading-none">Bonjour, <span className="font-medium">{user?.name.split(' ')[0]}</span></h1>
+                        <h1 className="text-5xl font-light tracking-tight text-white leading-none">
+                            Bonjour,{' '}
+                            <span className="font-medium normal-case">{displayUserName(user)}</span>
+                        </h1>
                     </div>
 
                     <div className="flex items-center gap-6">

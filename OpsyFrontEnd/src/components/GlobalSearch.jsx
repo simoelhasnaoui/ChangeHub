@@ -98,7 +98,7 @@ export default function GlobalSearch({ results, isOpen, onClose, role, setSearch
                                                 key={u.id}
                                                 className="group flex items-center gap-4 p-4 bg-white/[0.02] border border-transparent hover:border-white/10 rounded-2xl transition-all cursor-default"
                                             >
-                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-transparent flex items-center justify-center text-primary font-black text-xs border border-primary/20 group-hover:scale-105 transition-transform">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-transparent flex items-center justify-center text-primary font-black text-xs border border-primary/20 group-hover:scale-105 transition-transform shrink-0">
                                                     {u.name.charAt(0)}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
