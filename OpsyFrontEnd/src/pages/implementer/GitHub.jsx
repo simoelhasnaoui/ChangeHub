@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import api from '../../api/axios'
-import { Link2, Unlink, RefreshCw, Lock, Globe, History, ChevronRight } from 'lucide-react'
+import { Link2, Unlink, RefreshCw, Lock, Globe, History, ChevronRight, Search } from 'lucide-react'
 import ActivityPaginationBar from '../../components/implementer/ActivityPaginationBar'
 
 function GitHubMark({ size = 18, className = '' }) {
@@ -38,6 +38,7 @@ export default function ImplementerGitHub() {
   const [activityPage, setActivityPage] = useState(1)
   const [activityMeta, setActivityMeta] = useState(null)
   const [connecting, setConnecting] = useState(false)
+  const [repoSearch, setRepoSearch] = useState('')
 
   useLayoutEffect(() => {
     if (isArchives) setActivityLoading(true)
@@ -125,6 +126,20 @@ export default function ImplementerGitHub() {
     loadRepos(repoPage)
   }, [isArchives, status?.connected, repoPage, loadRepos])
 
+  useEffect(() => {
+    setRepoSearch('')
+  }, [repoPage])
+
+  const filteredRepos = useMemo(() => {
+    const q = repoSearch.trim().toLowerCase()
+    if (!q) return repos
+    return (repos || []).filter((r) => {
+      const name = String(r.full_name || r.name || '').toLowerCase()
+      const lang = String(r.language || '').toLowerCase()
+      return name.includes(q) || lang.includes(q)
+    })
+  }, [repos, repoSearch])
+
   const handleConnect = async () => {
     setError('')
     setConnecting(true)
@@ -155,6 +170,7 @@ export default function ImplementerGitHub() {
     setRepos([])
     setRepoMeta(null)
     setRepoPage(1)
+    setRepoSearch('')
     await loadStatus()
     setNotice('GitHub déconnecté.')
   }
@@ -371,8 +387,12 @@ export default function ImplementerGitHub() {
                   <p className="text-[10px] text-[#B5A1C2]/40 mt-1">
                     {status.connected
                       ? repoMeta
-                        ? `${repos.length} dépôt(s) affiché(s) · page ${repoMeta.current_page}/${repoMeta.last_page}`
-                        : `${repos.length} dépôts`
+                        ? repoSearch.trim()
+                          ? `${filteredRepos.length} résultat(s) sur ${repos.length} (page ${repoMeta.current_page}/${repoMeta.last_page})`
+                          : `${repos.length} dépôt(s) affiché(s) · page ${repoMeta.current_page}/${repoMeta.last_page}`
+                        : repoSearch.trim()
+                          ? `${filteredRepos.length} résultat(s) sur ${repos.length}`
+                          : `${repos.length} dépôts`
                       : 'Connectez GitHub pour afficher vos dépôts.'}
                   </p>
                 </div>
@@ -400,8 +420,29 @@ export default function ImplementerGitHub() {
               </div>
             ) : (
               <>
+                {repos.length > 0 && (
+                  <div className="mb-5">
+                    <div className="relative">
+                      <Search
+                        size={14}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B5A1C2]/45 pointer-events-none"
+                        strokeWidth={2}
+                      />
+                      <input
+                        type="search"
+                        value={repoSearch}
+                        onChange={(e) => setRepoSearch(e.target.value)}
+                        placeholder="Filtrer les dépôts…"
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="w-full bg-black/25 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white placeholder:text-[#B5A1C2]/35 focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/30"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-3">
-                  {repos.map((r) => (
+                  {filteredRepos.map((r) => (
                     <a
                       key={r.id || r.full_name}
                       href={r.html_url}
@@ -432,6 +473,21 @@ export default function ImplementerGitHub() {
                       </div>
                     </a>
                   ))}
+
+                  {repos.length > 0 && filteredRepos.length === 0 && (
+                    <div className="py-12 text-center bg-white/[0.02] border border-dashed border-white/10 rounded-[2rem]">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[#B5A1C2]/40">
+                        Aucun dépôt ne correspond à « {repoSearch.trim()} »
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setRepoSearch('')}
+                        className="mt-4 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors"
+                      >
+                        Effacer le filtre
+                      </button>
+                    </div>
+                  )}
 
                   {repos.length === 0 && (
                     <div className="py-14 text-center bg-white/[0.02] border-2 border-dashed border-white/5 rounded-[2.5rem] space-y-3">

@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, Check } from 'lucide-react'
+import { ChevronDown, Check, Search } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
 export default function ChangeHubSelect({ 
@@ -12,14 +12,43 @@ export default function ChangeHubSelect({
     className = "",
     disabled = false,
     usePortal = false,
+    searchable = false,
+    searchPlaceholder = 'Rechercher…',
 }) {
     const [isOpen, setIsOpen] = useState(false)
+    const [query, setQuery] = useState('')
     const containerRef = useRef(null)
     const triggerRef = useRef(null)
     const menuRef = useRef(null)
+    const searchInputRef = useRef(null)
     const [menuRect, setMenuRect] = useState(null)
 
     const selectedOption = options.find(opt => String(opt.value) === String(value))
+
+    const displayOptions = useMemo(() => {
+        if (!searchable) return options
+        const q = query.trim().toLowerCase()
+        const emptyOpt = options.find((o) => String(o.value) === '')
+        const rest = emptyOpt ? options.filter((o) => o !== emptyOpt) : options
+        const filteredRest = !q
+            ? rest
+            : rest.filter(
+                  (o) =>
+                      String(o.label).toLowerCase().includes(q) ||
+                      String(o.value).toLowerCase().includes(q)
+              )
+        return emptyOpt ? [emptyOpt, ...filteredRest] : filteredRest
+    }, [options, query, searchable])
+
+    useEffect(() => {
+        if (!isOpen) setQuery('')
+    }, [isOpen])
+
+    useEffect(() => {
+        if (!isOpen || !searchable) return
+        const t = requestAnimationFrame(() => searchInputRef.current?.focus())
+        return () => cancelAnimationFrame(t)
+    }, [isOpen, searchable])
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -64,20 +93,49 @@ export default function ChangeHubSelect({
                 exit={{ opacity: 0, y: 10, scale: 0.98 }}
                 transition={{ type: 'spring', damping: 26, stiffness: 320 }}
                 ref={menuRef}
-                className="bg-[#1A0B2E]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
+                className="bg-[#1A0B2E]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
                 style={{
                     width: usePortal ? (menuRect?.width ?? 320) : '100%',
                 }}
             >
-                <div className="max-h-60 overflow-y-auto custom-scrollbar p-2">
+                {searchable && (
+                    <div
+                        className="shrink-0 p-2 border-b border-white/10"
+                        onMouseDown={(e) => e.stopPropagation()}
+                    >
+                        <div className="relative">
+                            <Search
+                                size={14}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B5A1C2]/45 pointer-events-none"
+                                strokeWidth={2}
+                            />
+                            <input
+                                ref={searchInputRef}
+                                type="search"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder={searchPlaceholder}
+                                autoComplete="off"
+                                spellCheck={false}
+                                className="w-full bg-black/25 border border-white/10 rounded-xl py-2.5 pl-9 pr-3 text-xs text-white placeholder:text-[#B5A1C2]/35 focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/30"
+                            />
+                        </div>
+                    </div>
+                )}
+                <div className="max-h-60 overflow-y-auto custom-scrollbar p-2 min-h-0">
                     {options.length === 0 && (
                         <div className="px-4 py-3 text-[10px] text-white/20 uppercase font-black tracking-widest text-center">
                             Aucune option
                         </div>
                     )}
-                    {options.map((option) => (
+                    {options.length > 0 && displayOptions.length === 0 && (
+                        <div className="px-4 py-6 text-[10px] text-[#B5A1C2]/45 uppercase font-black tracking-widest text-center">
+                            Aucun résultat
+                        </div>
+                    )}
+                    {displayOptions.map((option) => (
                         <button
-                            key={option.value}
+                            key={`${String(option.value)}-${option.label}`}
                             type="button"
                             onClick={() => {
                                 onChange(option.value)

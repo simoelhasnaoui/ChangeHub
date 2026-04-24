@@ -181,6 +181,8 @@ function SortableItem({ req, repoOptions, onLinkRepo, insightsByRepo, ghConnecte
                   placeholder={!ghConnected ? 'Connect GitHub to link repos' : '— No repo linked —'}
                   icon={Link2}
                   usePortal={true}
+                  searchable
+                  searchPlaceholder="Filtrer les dépôts…"
                   options={[
                     { value: '', label: '— No repo linked —' },
                     ...repoOptions.map((r) => ({ value: r.full_name, label: r.full_name })),
