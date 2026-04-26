@@ -62,19 +62,7 @@ function pipelineTone(p) {
   return { label: (p.conclusion || p.status || 'UNKNOWN').toUpperCase(), color: 'text-[#B5A1C2]/60', bg: 'bg-white/5 border-white/10' }
 }
 
-function SortableItem({ req, repoOptions, onLinkRepo, insightsByRepo, ghConnected }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: req.id.toString(),
-    data: req,
-  })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? 100 : 1,
-  }
-
+function TaskCard({ req, repoOptions, onLinkRepo, insightsByRepo, ghConnected, isOverlay, dragListeners }) {
   const deadline = req.planned_date ? new Date(req.planned_date) : null
   const repoFullName = req.repo_link?.repo_full_name || null
   const repoInsight = repoFullName ? insightsByRepo[repoFullName] : null
@@ -85,35 +73,38 @@ function SortableItem({ req, repoOptions, onLinkRepo, insightsByRepo, ghConnecte
   const blockedByPipeline = pipeTone.label === 'FAILED'
 
   return (
-    <div ref={setNodeRef} style={style} className="group relative">
-      <div className="bg-[#150522]/60 backdrop-blur-md border border-white/5 p-5 rounded-2xl shadow-xl hover:border-primary/30 transition-all mb-4 relative">
-        <div className="flex justify-between items-start mb-3 gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black tracking-widest text-primary opacity-40">TASK_{req.id}</span>
-              <span
-                className="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border"
-                style={{ color: RISK_MAP[req.risk_level]?.color }}
-              >
-                {RISK_MAP[req.risk_level]?.label || '—'}
+    <div className={`bg-[#150522]/60 backdrop-blur-md border p-5 rounded-2xl relative transition-all ${isOverlay ? 'border-primary/50 shadow-[0_30px_60px_rgba(0,0,0,0.8)] opacity-95 scale-105 rotate-2 cursor-grabbing ring-4 ring-primary/10' : 'border-white/5 shadow-xl hover:border-primary/30 mb-4'}`}>
+      <div className="flex justify-between items-start mb-3 gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black tracking-widest text-primary opacity-40">TASK_{req.id}</span>
+            <span
+              className="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border"
+              style={{ color: RISK_MAP[req.risk_level]?.color || '#fff' }}
+            >
+              {RISK_MAP[req.risk_level]?.label || '—'}
+            </span>
+            {(blockedByRequester || blockedByPipeline) && (
+              <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
+                BLOCKED
               </span>
-              {(blockedByRequester || blockedByPipeline) && (
-                <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
-                  BLOCKED
-                </span>
-              )}
-            </div>
-            <h3 className="mt-2 font-bold text-white text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2">
-              {req.title}
-            </h3>
-            <p className="mt-2 text-[9px] font-bold uppercase tracking-widest text-[#B5A1C2]/30 line-clamp-1">
-              Change request: #{req.id}
-            </p>
+            )}
+            {isOverlay && (
+              <div className="p-1 px-2 rounded-md bg-primary/20 text-[8px] text-primary font-bold">MAGNETIC_LOCK</div>
+            )}
           </div>
+          <h3 className="mt-2 font-bold text-white text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2">
+            {req.title}
+          </h3>
+          <p className="mt-2 text-[9px] font-bold uppercase tracking-widest text-[#B5A1C2]/30 line-clamp-1">
+            Change request: #{req.id}
+          </p>
+        </div>
 
+        {!isOverlay && (
           <div className="flex items-center gap-2 shrink-0">
-            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 hover:bg-white/5 rounded-md text-[#B5A1C2]/20 hover:text-white transition-colors">
-              <div className="w-2 h-2 rounded-full bg-white/10" />
+            <div {...dragListeners} className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-white/5 rounded-md text-[#B5A1C2]/20 hover:text-white transition-colors">
+              <div className="w-1.5 h-1.5 rounded-full bg-white/20 shadow-[0_4px_0_0_rgba(255,255,255,0.2),0_8px_0_0_rgba(255,255,255,0.2)] mb-2" />
             </div>
             <Link
               to={`/implementer/changes/${req.id}`}
@@ -122,49 +113,51 @@ function SortableItem({ req, repoOptions, onLinkRepo, insightsByRepo, ghConnecte
               <ChevronRight size={14} />
             </Link>
           </div>
-        </div>
+        )}
+      </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className="text-[8px] font-black uppercase tracking-widest bg-white/5 px-2 py-1 rounded-lg text-[#B5A1C2]/60 border border-white/5">
-            {req.affected_system}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className="text-[8px] font-black uppercase tracking-widest bg-white/5 px-2 py-1 rounded-lg text-[#B5A1C2]/60 border border-white/5">
+          {req.affected_system}
+        </span>
+        {repoFullName && (
+          <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${pipeTone.bg} ${pipeTone.color}`}>
+            <Workflow size={10} className="inline mr-1 -translate-y-[1px]" />
+            {pipeTone.label}
           </span>
-          {repoFullName && (
-            <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${pipeTone.bg} ${pipeTone.color}`}>
-              <Workflow size={10} className="inline mr-1 -translate-y-[1px]" />
-              {pipeTone.label}
-            </span>
+        )}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-[9px] font-medium text-[#B5A1C2]/30">
+            <Clock size={10} />
+            {deadline ? deadline.toLocaleDateString('fr-FR') : '—'}
+          </div>
+
+          {repoFullName && repoInsight?.html_url && (
+            <a
+              href={repoInsight.html_url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[9px] font-black uppercase tracking-widest text-primary/70 hover:text-primary transition-colors flex items-center gap-2"
+            >
+              <GitBranch size={12} />
+              Open repo
+            </a>
           )}
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-[9px] font-medium text-[#B5A1C2]/30">
-              <Clock size={10} />
-              {deadline ? deadline.toLocaleDateString('fr-FR') : '—'}
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <div className="text-[8px] font-black uppercase tracking-widest text-[#B5A1C2]/30 mb-2 flex items-center gap-2">
+              <Link2 size={12} className="text-primary/60" />
+              Link task ↔ repo
             </div>
-
-            {repoFullName && repoInsight?.html_url && (
-              <a
-                href={repoInsight.html_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[9px] font-black uppercase tracking-widest text-primary/70 hover:text-primary transition-colors flex items-center gap-2"
-              >
-                <GitBranch size={12} />
-                Open repo
-              </a>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <div className="text-[8px] font-black uppercase tracking-widest text-[#B5A1C2]/30 mb-2 flex items-center gap-2">
-                <Link2 size={12} className="text-primary/60" />
-                Link task ↔ repo
-              </div>
-              {req.__repo_link_locked ? (
-                <div className="flex items-center justify-between gap-3 bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4">
-                  <span className="text-xs text-white truncate">{repoFullName || '—'}</span>
+            {req.__repo_link_locked ? (
+              <div className="flex items-center justify-between gap-3 bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4">
+                <span className="text-xs text-white truncate">{repoFullName || '—'}</span>
+                {!isOverlay && (
                   <button
                     type="button"
                     onClick={() => req.__onUnlockRepoLink?.(req.id)}
@@ -172,54 +165,53 @@ function SortableItem({ req, repoOptions, onLinkRepo, insightsByRepo, ghConnecte
                   >
                     Change
                   </button>
-                </div>
-              ) : (
-                <ChangeHubSelect
-                  value={repoFullName || ''}
-                  onChange={(val) => onLinkRepo(req.id, val || null)}
-                  disabled={!ghConnected || (ghConnected && repoOptions.length === 0)}
-                  placeholder={!ghConnected ? 'Connect GitHub to link repos' : '— No repo linked —'}
-                  icon={Link2}
-                  usePortal={true}
-                  searchable
-                  searchPlaceholder="Filtrer les dépôts…"
-                  options={[
-                    { value: '', label: '— No repo linked —' },
-                    ...repoOptions.map((r) => ({ value: r.full_name, label: r.full_name })),
-                  ]}
-                />
-              )}
-              {!ghConnected ? (
-                <div className="mt-2 text-[9px] text-[#B5A1C2]/30">
-                  Go to <span className="text-primary/70">/implementer/changes</span> to connect GitHub.
-                </div>
-              ) : repoOptions.length === 0 ? (
-                <div className="mt-2 text-[9px] text-[#B5A1C2]/30">Loading repos…</div>
-              ) : null}
+                )}
+              </div>
+            ) : (
+              <div className="opacity-50 pointer-events-none bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-[10px] text-white">
+                {repoFullName || '— No repo linked —'}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {repoFullName && repoInsight?.commit?.message && (
+          <div className="pt-3 border-t border-white/5">
+            <div className="text-[8px] font-black uppercase tracking-widest text-[#B5A1C2]/30">Last commit</div>
+            <div className="mt-2 text-[11px] text-white/90 line-clamp-2">{repoInsight.commit.message}</div>
+            <div className="mt-2 text-[9px] text-[#B5A1C2]/40">
+              {repoInsight.commit.author || '—'} • {repoInsight.commit.date ? new Date(repoInsight.commit.date).toLocaleString('fr-FR') : '—'}
             </div>
           </div>
-
-          {repoFullName && repoInsight?.commit?.message && (
-            <div className="pt-3 border-t border-white/5">
-              <div className="text-[8px] font-black uppercase tracking-widest text-[#B5A1C2]/30">Last commit</div>
-              <div className="mt-2 text-[11px] text-white/90 line-clamp-2">{repoInsight.commit.message}</div>
-              <div className="mt-2 text-[9px] text-[#B5A1C2]/40">
-                {repoInsight.commit.author || '—'} • {repoInsight.commit.date ? new Date(repoInsight.commit.date).toLocaleString('fr-FR') : '—'}
-              </div>
-              {pipe?.html_url && (
-                <a
-                  href={pipe.html_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`mt-2 inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${pipeTone.color} hover:text-white transition-colors`}
-                >
-                  View logs →
-                </a>
-              )}
-            </div>
-          )}
-        </div>
+        )}
       </div>
+    </div>
+  )
+}
+
+function SortableItem({ req, repoOptions, onLinkRepo, insightsByRepo, ghConnected }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: req.id.toString(),
+    data: req,
+  })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+    zIndex: isDragging ? 100 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className="group relative">
+      <TaskCard 
+        req={req} 
+        repoOptions={repoOptions} 
+        onLinkRepo={onLinkRepo} 
+        insightsByRepo={insightsByRepo} 
+        ghConnected={ghConnected}
+        dragListeners={{...attributes, ...listeners}}
+      />
     </div>
   )
 }
@@ -666,13 +658,14 @@ export default function ImplementerDashboard() {
             }}
           >
             {activeItem ? (
-              <div className="bg-[#150522]/90 backdrop-blur-3xl border-2 border-primary/50 p-5 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] opacity-90 scale-105 rotate-2 cursor-grabbing ring-4 ring-primary/10">
-                <div className="flex justify-between items-start mb-3">
-                  <span className="text-[9px] font-black tracking-widest text-primary">TASK_{activeItem.id}</span>
-                  <div className="p-1 px-2 rounded-md bg-primary/20 text-[8px] text-primary font-bold">MAGNETIC_LOCK</div>
-                </div>
-                <h3 className="font-bold text-white text-sm leading-tight mb-2">{activeItem.title}</h3>
-              </div>
+              <TaskCard 
+                req={activeItem} 
+                repoOptions={repoOptions} 
+                onLinkRepo={onLinkRepo} 
+                insightsByRepo={insightsByRepo} 
+                ghConnected={ghConnected}
+                isOverlay={true}
+              />
             ) : null}
           </DragOverlay>
         </DndContext>
