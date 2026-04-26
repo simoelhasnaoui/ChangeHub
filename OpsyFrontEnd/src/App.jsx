@@ -20,6 +20,7 @@ import ManageChange from './pages/implementer/ManageChange'
 import ImplementerGitHub from './pages/implementer/GitHub'
 
 import AdminDashboard from './pages/admin/Dashboard'
+import AdminChanges from './pages/admin/Changes'
 import Users from './pages/admin/Users'
 import AdminChangeDetail from './pages/admin/ChangeDetail'
 
@@ -69,7 +70,7 @@ export default function App() {
 
             {/* Admin */}
             <Route path="/admin" element={wrap(['admin'], <AdminDashboard />)} />
-            <Route path="/admin/changes" element={wrap(['admin'], <AdminDashboard />)} />
+            <Route path="/admin/changes" element={wrap(['admin'], <AdminChanges />)} />
             <Route path="/admin/changes/:id" element={wrap(['admin'], <AdminChangeDetail />)} />
             <Route path="/admin/users" element={wrap(['admin'], <Users />)} />
             <Route path="/admin/profile" element={wrap(['admin'], <ProfilePage />)} />
